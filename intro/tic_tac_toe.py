@@ -56,6 +56,122 @@ def get_player_move(board):
         move = raw_input('What is your next move (1-9)? ')
     return int(move)
 
+def choose_random_move_from_list(board, moves_list):
+    #The computer will get a list of moves to choose from.
+    #It will go through all of them and find if any are valid.
+    #Then, it chooses randomly from the valid moves.
+    possible_moves = []
+    for move in moves_list:
+        if board[move] == ' ': #This is a SPACE, NOT and EMPTY STRING
+            possible_moves.append(move)
+    if len(possible_moves) != 0:
+        return random.choice(possible_moves)
+    else:
+        None
+
+def get_computer_move(board, computer_letter):
+    if computer_letter == 'X':
+        player_letter = 'O'
+    else:
+        player_letter = 'X'
+
+    #TIC TAC TOE A.I.
+    #1. Check to see if the computer can win!
+
+    for number in range(1,10):
+        board_copy = copy.copy(board) #Make a copy of the board
+        if board_copy[number] == ' ':
+            board_copy[number] = computer_letter #Make the move!
+            if is_winner(board_copy, computer_letter):
+                return number
+    
+    #2. Check to see if the computer can block a win!
+    for number in range(1,10):
+        board_copy = copy.copy(board) #Make a copy of the board
+        if board_copy[number] == ' ':
+            board_copy[number] = player_letter #Make the move!
+            if is_winner(board_copy, player_letter):
+                return number
+
+    #3. If a corner is free, take it.
+    move = choose_random_move_from_list(board, [1,3,7,9])
+    if move != None:
+        return move
+
+    #4. If the center is free, take it.
+    move = choose_random_move_from_list(board, [5])
+    if move != None:
+        return move
+
+    #5. If an edge is free, take it.
+    return choose_random_move_from_list(board, [2,4,6,8])
+
+#############################################################
+#                                                           #
+#                        MAIN PROGRAM                       #
+#                                                           #
+#############################################################
+
+def main():
+    print 'Welcome to Tic-Tac-Toe!'
+    wins = 0
+    losses = 0
+    ties = 0
+    while True:
+        board = [' ']*10
+        player_letter, computer_letter = input_player_letter()
+        turn = who_goes_first() #Will either be 'player' or 'computer'
+        print 'The {} will go first.'.format(turn)
+        game_is_playing = True
+
+        while game_is_playing:
+
+            if turn == 'player':
+                draw_board(board)
+                move = get_player_move(board)
+                board[move] = player_letter
+                
+                if is_winner(board, player_letter):
+                    draw_board(board)
+                    print 'Horray! You have won the game!'
+                    wins += 1
+                    game_is_playing = False
+                elif board.count(' ') == 1:
+                    draw_board(board)
+                    print 'The game is a tie!'
+                    ties += 1
+                    game_is_playing = False
+                else:
+                    turn = 'computer'
+
+            elif turn == 'computer':
+                move = get_computer_move(board, computer_letter)
+                board[move] = computer_letter #Make the move! (moron)
+
+                if is_winner(board, computer_letter):
+                    draw_board(board)
+                    print 'The computer has beaten you. You lose!'
+                    losses += 1
+                    game_is_playing = False
+                elif board.count(' ') == 1:
+                    draw_board(board)
+                    print 'The game is a tie!'
+                    ties += 1
+                    game_is_playing = False
+                else:
+                    turn = 'player'
+        print 'Wins: {}'.format(wins)
+        print 'Losses: {}'.format(losses)
+        print 'Ties: {}'.format(ties)
+
+        if not play_again():
+            print 'Have a nice day!'
+            break
+
+
+
+main()
+        
 
 
 
