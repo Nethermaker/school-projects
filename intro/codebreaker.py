@@ -12,7 +12,7 @@ def rotate_letter(letter, number):
     else:
         return letter
 
-def caesar_cipher(string, number, encode):
+def caesar_cipher(string, number, encode=True):
     new_string = ''
     if encode == False:
         number *= -1
@@ -51,8 +51,17 @@ def remove_extras(string):
             string = string.replace(letter, '')
     return string.lower()
 
+def remove_extras(string):
+    new_one = ''
+    for letter in string:
+        if letter == ' ':
+            pass
+        elif letter.isalpha():
+            new_one += letter
+    return new_one
+
 #Commented-out lines were used for debugging
-def vigenere(string, keyword, encode):
+def vigenere(string, keyword, encode=True):
     string = remove_extras(string)
     #print string
     
@@ -77,27 +86,3 @@ def vigenere(string, keyword, encode):
 #
 #or...: Congratulations you have managed to crack the code you are clearly
 #       too smart for this class
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

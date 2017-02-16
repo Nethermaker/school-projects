@@ -96,36 +96,8 @@ print sorted(grades, key=get_grade) # Write code inside the parentheses
 #     Example: last_name(('John Doe', 84)) = 'Doe'
 
 def get_last_name(pair):
-    last_name = pair[0].split()[1]
-    return last_name
-
-print sorted(grades, key=get_last_name)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    return pair[0].split()[1]
 
 # 7b) Write a line of code that sorts the grades list by last name.
 
-print sorted(erase_me) # Write code inside the parentheses
+print sorted(grades, key=get_last_name) # Write code inside the parentheses
