@@ -31,28 +31,85 @@ def draw_board(board):
     print '8 {}|{}|{}|{}|{}|{}|{}|{}'.format(board[8][1], board[8][2], board[8][3], board[8][4], board[8][5], board[8][6], board[8][7], board[8][8])
 
    
-#I have decided the for the sake of simplicity and my sanity, player 1 will always be O
+#I have decided that for the sake of simplicity and my sanity, player 1 will always be X
 
-
+#NOTE TO SELF: CHANGE THIS TO LETTER AND ROW (ex. 'd4', 'a7', etc.)
 def get_player_move(player, board):
     if player == '1':
-        letter = 'O'
-        pattern = re.compile('[0-8], [0-8]')
-        while True:
-            move = raw_input('Choose the row and column you want to move in (\'row#, column#\')? ')
+        letter = 'X'
+        pattern = re.compile('[1-8] [1-8]')
+        is_valid_move = False
+        while is_valid_move == False:
+            move = raw_input('Player 1, choose the row and column you want to move in (ex. \'7 4\'): ')
             #Checks if the input matches the wanted pattern (it's extremely picky, but it works
             if pattern.match(move):
-                move = move.split(',')
-                row = int(move[0])
-                column = int(move[1])
-                #valid = check_if_valid_move(row, column)
+                move = move.split(' ')
+                is_valid_move = valid_move(move, letter)
             else:
-                print 'Invalid Move!'
+                print 'Invalid Move! Make sure that your move matches the format shown.'
                 
             
             
         #check_if_valid(int(row), int(column), board)
         return row, column
+    else:
+        letter = 'O'
+
+
+def valid_move(move, letter):
+    if letter == 'X':
+        opposite = 'O'
+    else:
+        opposite = 'X' 
+    row = int(move[0])
+    column = int(move[1])
+    #First: Check to see if the square is empty
+    if board[row][column] == ' ':
+        #Second: Check to see if there is an opposite piece in an adjacent square
+        if 'O' in [board[row][column + 1],
+                   board[row][column - 1],
+                   board[row + 1][column],
+                   board[row - 1][column],
+                   board[row + 1][column + 1],
+                   board[row + 1][column - 1],
+                   board[row - 1][column + 1],
+                   board[row - 1][column - 1]]:
+            #Third: Check to see if a same piece is in the row, column, or diagonal,
+            # AND isn't behind a same piece
+            return True
+
+def change_left(row, column, letter):
+    if letter in board[row][1:column]:
+        column -= 1
+        new_row = board[row][:]
+        valid = True
+        while new_row[column] != letter:
+            if new_row[column] == ' ':
+                valid = False
+                break
+            else:
+                new_row[column] = letter
+                column -= 1
+        if valid:
+            board[row] = new_row
+
+def change_right(row, column, letter):
+    if letter in board[row][1:column]:
+        column += 1
+        new_row = board[row][:]
+        valid = True
+        while new_row[column] != letter:
+            if new_row[column] == ' ':
+                valid = False
+                break
+            else:
+                new_row[column] = letter
+                column += 1
+        if valid:
+            board[row] = new_row
+                
+        
+
 
 
 
