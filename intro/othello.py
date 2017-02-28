@@ -5,8 +5,8 @@ board = [['This is here to make things easier, along with the first blank spot i
          [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
          [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
          [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
-         [' ', ' ', ' ', ' ', 'X', 'O', ' ', ' ', ' '],
-         [' ', ' ', ' ', ' ', 'O', 'X', ' ', ' ', ' '],
+         [' ', ' ', ' ', ' ', 'X', 'O', 'O', 'O', ' '],
+         [' ', ' ', ' ', ' ', 'O', 'X', 'O', ' ', ' '],
          [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
          [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
          [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ']]
@@ -79,6 +79,7 @@ def valid_move(move, letter):
             return True
 
 def change_left(row, column, letter):
+    original_column = column
     if letter in board[row][1:column]:
         column -= 1
         new_row = board[row][:]
@@ -92,9 +93,12 @@ def change_left(row, column, letter):
                 column -= 1
         if valid:
             board[row] = new_row
+            board[row][original_column] = letter
+            draw_board(board)
 
 def change_right(row, column, letter):
-    if letter in board[row][1:column]:
+    original_column = column
+    if letter in board[row][column+1:]:
         column += 1
         new_row = board[row][:]
         valid = True
@@ -107,8 +111,33 @@ def change_right(row, column, letter):
                 column += 1
         if valid:
             board[row] = new_row
+            board[row][original_column] = letter
+            draw_board(board)
+
+def change_down(row, column, letter):
+    row_num = row
+    row += 1
+    column_num = column
+    column = []
+    for num in range(9-row):
+        column.append(board[row][column_num])
+        row += 1
+    print column
+    valid = False
+    count = 0
+    for piece in column:
+        if piece == ' ':
+            return
+        elif piece != letter:
+            count += 1
+        elif piece == letter and count == 0:
+            return
+        elif piece == letter:
+            for num in range(count):
+                column[num] = letter
+            print column
                 
-        
+
 
 
 
