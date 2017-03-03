@@ -2,14 +2,25 @@ import copy
 import re
 
 board = [['This is here to make things easier, along with the first blank spot in each line'],
-         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
-         [' ', ' ', ' ', ' ', ' ', 'O', ' ', ' ', ' '],
-         [' ', ' ', ' ', ' ', 'X', 'X', ' ', ' ', ' '],
-         [' ', ' ', ' ', 'X', 'O', ' ', ' ', ' ', ' '],
-         [' ', ' ', ' ', 'O', ' ', ' ', ' ', ' ', ' '],
-         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
-         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
-         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ']]
+         ['dummy', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
+         ['dummy', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
+         ['dummy', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
+         ['dummy', ' ', ' ', ' ', 'X', 'O', ' ', ' ', ' '],
+         ['dummy', ' ', ' ', ' ', 'O', 'X', ' ', ' ', ' '],
+         ['dummy', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
+         ['dummy', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
+         ['dummy', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ']]
+
+#Blank board:
+##[['This is here to make things easier, along with the first blank spot in each line'],
+##         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
+##         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
+##         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
+##         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
+##         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
+##         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
+##         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
+##         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ']]
 
 
 def draw_board(board):
@@ -37,52 +48,83 @@ def draw_board(board):
 def get_player_move(player, board):
     if player == '1':
         letter = 'X'
-        pattern = re.compile('[1-8] [1-8]')
-        is_valid_move = False
-        while is_valid_move == False:
-            move = raw_input('Player 1, choose the row and column you want to move in (ex. \'7 4\'): ')
-            #Checks if the input matches the wanted pattern (it's extremely picky, but it works
-            if pattern.match(move):
-                move = move.split(' ')
-                is_valid_move = valid_move(move, letter)
-            else:
-                print 'Invalid Move! Make sure that your move matches the format shown.'
-                
-            
-            
-        #check_if_valid(int(row), int(column), board)
-        return row, column
     else:
         letter = 'O'
+    pattern = re.compile('[1-8] [1-8]')
+    while True:
+        move = raw_input('Player 1, choose the row and column you want to move in (ex. \'7 4\'): ')
+        #Checks if the input matches the wanted pattern
+        if pattern.match(move):
+            move = move.split(' ')
+            row = int(move[0])
+            column = int(move[1])
+        else:
+            print 'Invalid input! Make sure your input matches the example shown.'
+        new_board = make_move(row, column, letter, board)
+        letter_count = 0
+        opposite_count = 0
+        new_letter_count = 0
+        new_opposite_count = 0
+        for row in board:
+            for piece in row:
+                if piece == letter:
+                    letter_count += 1
+                elif piece == ' ':
+                    pass
+                else:
+                    opposite_count += 1
+        for row in new_board:
+            for piece in row:
+                if piece == letter:
+                    new_letter_count += 1
+                elif piece == ' ':
+                    pass
+                else:
+                    new_opposite_count += 1
+        
+        if letter_count + 1 == new_letter_count and opposite_count == new_opposite_count:
+            print 'That move is not legal. Make a different move.'
+        else:
+            board = new_board
+            draw_board(board)
+            break
+    
 
 
-def valid_move(move, letter):
+def make_move(row, column, letter):
+    new_board = copy.copy(board)
     if letter == 'X':
         opposite = 'O'
     else:
-        opposite = 'X' 
-    row = int(move[0])
-    column = int(move[1])
+        opposite = 'X'
     #First: Check to see if the square is empty
     if board[row][column] == ' ':
         #Second: Check to see if there is an opposite piece in an adjacent square
-        if 'O' in [board[row][column + 1],
-                   board[row][column - 1],
-                   board[row + 1][column],
-                   board[row - 1][column],
-                   board[row + 1][column + 1],
-                   board[row + 1][column - 1],
-                   board[row - 1][column + 1],
-                   board[row - 1][column - 1]]:
+        if opposite in [new_board[row][column + 1],
+                        new_board[row][column - 1],
+                        new_board[row + 1][column],
+                        new_board[row - 1][column],
+                        new_board[row + 1][column + 1],
+                        new_board[row + 1][column - 1],
+                        new_board[row - 1][column + 1],
+                        new_board[row - 1][column - 1]]:
             #Third: Check to see if a same piece is in the row, column, or diagonal,
             # AND isn't behind a same piece
-            return True
+            change_left(row, column, letter, new_board)
+            change_right(row, column, letter, new_board)
+            change_down(row, column, letter, new_board)
+            change_up(row, column, letter, new_board)
+            change_upleft(row, column, letter, new_board)
+            change_upright(row, column, letter, new_board)
+            change_downleft(row, column, letter, new_board)
+            change_downright(row, column, letter, new_board)
+            return new_board
 
 
 ###################################################################################################
 #The logic for checking and making a move begins here...
 ###################################################################################################
-def change_left(row, column, letter):
+def change_left(row, column, letter, board):
     original_column = column
     if letter in board[row][1:column]:
         column -= 1
@@ -99,7 +141,7 @@ def change_left(row, column, letter):
             board[row] = new_row
             board[row][original_column] = letter
 
-def change_right(row, column, letter):
+def change_right(row, column, letter, board):
     original_column = column
     if letter in board[row][column+1:]:
         column += 1
@@ -116,7 +158,7 @@ def change_right(row, column, letter):
             board[row] = new_row
             board[row][original_column] = letter
 
-def change_down(row, column, letter):
+def change_down(row, column, letter, board):
     row_num = row
     row += 1
     column_num = column
@@ -124,7 +166,6 @@ def change_down(row, column, letter):
     for num in range(9-row):
         column.append(board[row][column_num])
         row += 1
-    print column
     count = 0
     for piece in column:
         if piece == ' ':
@@ -136,7 +177,6 @@ def change_down(row, column, letter):
         elif piece == letter:
             for num in range(count):
                 column[num] = letter
-            print column
     second_count = 1
     for piece in column:
         board[row_num + second_count][column_num] = piece
@@ -144,7 +184,7 @@ def change_down(row, column, letter):
     board[row_num][column_num] = letter
 
 
-def change_up(row, column, letter):
+def change_up(row, column, letter, board):
     row_num = row
     row -= 1
     column_num = column
@@ -152,7 +192,6 @@ def change_up(row, column, letter):
     for num in range(row):
         column.append(board[row][column_num])
         row -= 1
-    print column
     count = 0
     for piece in column:
         if piece == ' ':
@@ -164,7 +203,6 @@ def change_up(row, column, letter):
         elif piece == letter:
             for num in range(count):
                 column[num] = letter
-            print column
     second_count = 1
     for piece in column:
         board[row_num - second_count][column_num] = piece
@@ -172,12 +210,13 @@ def change_up(row, column, letter):
     board[row_num][column_num] = letter
 
 
-def change_downright(row, column, letter):
+def change_downright(row, column, letter, board):
     diagonal = []
     for num in range(9-row):
+        if column + num == 9 or row + num == 9:
+            break
         diagonal.append(board[row + num][column + num])
     diagonal = diagonal[1:]
-    print diagonal
     count = 0
     for piece in diagonal:
         if piece == ' ':
@@ -189,19 +228,19 @@ def change_downright(row, column, letter):
         elif piece == letter:
             for num in range(count):
                 diagonal[num] = letter
-            print diagonal
     second_count = 1
     for piece in diagonal:
         board[row + second_count][column + second_count] = piece
         second_count += 1
     board[row][column] = letter
 
-def change_upleft(row, column, letter):
+def change_upleft(row, column, letter, board):
     diagonal = []
     for num in range(row):
+        if column - num == 0 or row - num == 0:
+            break
         diagonal.append(board[row - num][column - num])
     diagonal = diagonal[1:]
-    print diagonal
     count = 0
     for piece in diagonal:
         if piece == ' ':
@@ -213,19 +252,19 @@ def change_upleft(row, column, letter):
         elif piece == letter:
             for num in range(count):
                 diagonal[num] = letter
-            print diagonal
     second_count = 1
     for piece in diagonal:
         board[row - second_count][column - second_count] = piece
         second_count += 1
     board[row][column] = letter
     
-def change_downleft(row, column, letter):
+def change_downleft(row, column, letter, board):
     diagonal = []
     for num in range(9-row):
+        if row + num == 9 or column - num == 0:
+            break
         diagonal.append(board[row + num][column - num])
     diagonal = diagonal[1:]
-    print diagonal
     count = 0
     for piece in diagonal:
         if piece == ' ':
@@ -237,19 +276,19 @@ def change_downleft(row, column, letter):
         elif piece == letter:
             for num in range(count):
                 diagonal[num] = letter
-            print diagonal
     second_count = 1
     for piece in diagonal:
         board[row + second_count][column - second_count] = piece
         second_count += 1
     board[row][column] = letter
 
-def change_upright(row, column, letter):
+def change_upright(row, column, letter, board):
     diagonal = []
     for num in range(row):
+        if row - num == 0 or column + num == 9:
+            break
         diagonal.append(board[row - num][column + num])
     diagonal = diagonal[1:]
-    print diagonal
     count = 0
     for piece in diagonal:
         if piece == ' ':
@@ -261,7 +300,6 @@ def change_upright(row, column, letter):
         elif piece == letter:
             for num in range(count):
                 diagonal[num] = letter
-            print diagonal
     second_count = 1
     for piece in diagonal:
         board[row - second_count][column + second_count] = piece
