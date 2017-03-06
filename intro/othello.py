@@ -1,18 +1,35 @@
 import copy
 import re
+import sys
+import os.path
+import webbrowser
 
-board = [['This is here to make things easier, along with the first blank spot in each line'],
+board = [['This is here to make things easier, along with the first spot in each line'],
          ['dummy', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
          ['dummy', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
          ['dummy', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
-         ['dummy', ' ', ' ', ' ', 'X', 'O', ' ', ' ', ' '],
          ['dummy', ' ', ' ', ' ', 'O', 'X', ' ', ' ', ' '],
+         ['dummy', ' ', ' ', ' ', 'X', 'O', ' ', ' ', ' '],
          ['dummy', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
          ['dummy', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
          ['dummy', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ']]
 
+starting_board = [['This is here to make things easier, along with the first spot in each line'],
+         ['dummy', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
+         ['dummy', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
+         ['dummy', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
+         ['dummy', ' ', ' ', ' ', 'O', 'X', ' ', ' ', ' '],
+         ['dummy', ' ', ' ', ' ', 'X', 'O', ' ', ' ', ' '],
+         ['dummy', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
+         ['dummy', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
+         ['dummy', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ']]
+
+
+scores = {}
+
+
 #Blank board:
-##[['This is here to make things easier, along with the first blank spot in each line'],
+##[['This is here to make things easier, along with the first spot in each line'],
 ##         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
 ##         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
 ##         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
@@ -52,7 +69,7 @@ def get_player_move(player, board):
         letter = 'O'
     pattern = re.compile('[1-8] [1-8]')
     while True:
-        move = raw_input('Player 1, choose the row and column you want to move in (ex. \'7 4\'): ')
+        move = raw_input('Player {}, choose the row and column you want to move in (ex. \'7 4\'): '.format(player))
         #Checks if the input matches the wanted pattern
         if pattern.match(move):
             move = move.split(' ')
@@ -60,7 +77,7 @@ def get_player_move(player, board):
             column = int(move[1])
         else:
             print 'Invalid input! Make sure your input matches the example shown.'
-        new_board = make_move(row, column, letter, board)
+        new_board = make_move(row, column, letter)
         letter_count = 0
         opposite_count = 0
         new_letter_count = 0
@@ -111,24 +128,84 @@ def make_move(row, column, letter):
             #Third: Check to see if a same piece is in the row, column, or diagonal,
             # AND isn't behind a same piece
             change_left(row, column, letter, new_board)
+            draw_board(new_board)
             change_right(row, column, letter, new_board)
+            draw_board(new_board)
             change_down(row, column, letter, new_board)
+            draw_board(new_board)
             change_up(row, column, letter, new_board)
+            draw_board(new_board)
             change_upleft(row, column, letter, new_board)
+            draw_board(new_board)
             change_upright(row, column, letter, new_board)
+            draw_board(new_board)
             change_downleft(row, column, letter, new_board)
+            draw_board(new_board)
             change_downright(row, column, letter, new_board)
-            return new_board
+            draw_board(new_board)
+    #return new_board
+    #board = new_board ##This causes an error all they way at the top...
+    draw_board(new_board)
+
+def play_again():
+    while True:
+        answer = raw_input('Would you like to play again (y/n)? ').lower()
+        if answer.startswith('y'):
+            return True
+        else:
+            print 'Have a nice day!'
+            break
+
+def load_scores():
+    #finds the file path of trivia.py
+    file_path = sys.argv[0]
+    #gets the path of high_scores.txt (should be the same location)
+    scores_path = file_path.replace('othello.py', 'scores.txt')
+    #checks to see if high_scores.txt exists, and if it doesn't, it creates it
+    if not os.path.isfile(scores_path):
+        with open('scores.txt', 'w') as outfile:
+            outfile.write('')
+    #opens the file
+    else:
+        with open('scores.txt', 'rb') as infile:
+            for line in infile:
+                line = line.split(':')
+                scores[line[0]] = line[1].strip()
+
+def save_scores():
+    with open('scores.txt', 'w') as outfile:
+        for score in scores:
+            outfile.write('{}:{}/{}\n'.format(score, scores[score][0], scores[score][2]))
 
 
+def print_scores():
+    for session in sorted(scores):
+        print 'Session {}: Player 1 = {}, Player 2 = {}'.format(session, scores[session][0], scores[session][2])
+
+def game_is_playing():
+    count = 0
+    for row in board:
+        for piece in row:
+            if piece == 'X' or piece == 'O':
+                count += 1
+    if count == 64:
+        return True
+    else:
+        return False
+        
+def rules():
+    webbrowser.open('http://www.hannu.se/games/othello/rules.htm')
+
+
+    
 ###################################################################################################
 #The logic for checking and making a move begins here...
 ###################################################################################################
-def change_left(row, column, letter, board):
+def change_left(row, column, letter, aboard):
     original_column = column
-    if letter in board[row][1:column]:
+    if letter in aboard[row][1:column]:
         column -= 1
-        new_row = board[row][:]
+        new_row = aboard[row][:]
         valid = True
         while new_row[column] != letter:
             if new_row[column] == ' ':
@@ -138,14 +215,14 @@ def change_left(row, column, letter, board):
                 new_row[column] = letter
                 column -= 1
         if valid:
-            board[row] = new_row
-            board[row][original_column] = letter
+            aboard[row] = new_row
+            aboard[row][original_column] = letter
 
-def change_right(row, column, letter, board):
+def change_right(row, column, letter, aboard):
     original_column = column
-    if letter in board[row][column+1:]:
+    if letter in aboard[row][column+1:]:
         column += 1
-        new_row = board[row][:]
+        new_row = aboard[row][:]
         valid = True
         while new_row[column] != letter:
             if new_row[column] == ' ':
@@ -155,16 +232,16 @@ def change_right(row, column, letter, board):
                 new_row[column] = letter
                 column += 1
         if valid:
-            board[row] = new_row
-            board[row][original_column] = letter
+            aboard[row] = new_row
+            aboard[row][original_column] = letter
 
-def change_down(row, column, letter, board):
+def change_down(row, column, letter, aboard):
     row_num = row
     row += 1
     column_num = column
     column = []
     for num in range(9-row):
-        column.append(board[row][column_num])
+        column.append(aboard[row][column_num])
         row += 1
     count = 0
     for piece in column:
@@ -179,18 +256,18 @@ def change_down(row, column, letter, board):
                 column[num] = letter
     second_count = 1
     for piece in column:
-        board[row_num + second_count][column_num] = piece
+        aboard[row_num + second_count][column_num] = piece
         second_count += 1
-    board[row_num][column_num] = letter
+    aboard[row_num][column_num] = letter
 
 
-def change_up(row, column, letter, board):
+def change_up(row, column, letter, aboard):
     row_num = row
     row -= 1
     column_num = column
     column = []
     for num in range(row):
-        column.append(board[row][column_num])
+        column.append(aboard[row][column_num])
         row -= 1
     count = 0
     for piece in column:
@@ -205,17 +282,17 @@ def change_up(row, column, letter, board):
                 column[num] = letter
     second_count = 1
     for piece in column:
-        board[row_num - second_count][column_num] = piece
+        aboard[row_num - second_count][column_num] = piece
         second_count += 1
-    board[row_num][column_num] = letter
+    aboard[row_num][column_num] = letter
 
 
-def change_downright(row, column, letter, board):
+def change_downright(row, column, letter, aboard):
     diagonal = []
     for num in range(9-row):
         if column + num == 9 or row + num == 9:
             break
-        diagonal.append(board[row + num][column + num])
+        diagonal.append(aboard[row + num][column + num])
     diagonal = diagonal[1:]
     count = 0
     for piece in diagonal:
@@ -230,16 +307,16 @@ def change_downright(row, column, letter, board):
                 diagonal[num] = letter
     second_count = 1
     for piece in diagonal:
-        board[row + second_count][column + second_count] = piece
+        aboard[row + second_count][column + second_count] = piece
         second_count += 1
-    board[row][column] = letter
+    aboard[row][column] = letter
 
-def change_upleft(row, column, letter, board):
+def change_upleft(row, column, letter, aboard):
     diagonal = []
     for num in range(row):
         if column - num == 0 or row - num == 0:
             break
-        diagonal.append(board[row - num][column - num])
+        diagonal.append(aboard[row - num][column - num])
     diagonal = diagonal[1:]
     count = 0
     for piece in diagonal:
@@ -254,16 +331,16 @@ def change_upleft(row, column, letter, board):
                 diagonal[num] = letter
     second_count = 1
     for piece in diagonal:
-        board[row - second_count][column - second_count] = piece
+        aboard[row - second_count][column - second_count] = piece
         second_count += 1
-    board[row][column] = letter
+    aboard[row][column] = letter
     
-def change_downleft(row, column, letter, board):
+def change_downleft(row, column, letter, aboard):
     diagonal = []
     for num in range(9-row):
         if row + num == 9 or column - num == 0:
             break
-        diagonal.append(board[row + num][column - num])
+        diagonal.append(aboard[row + num][column - num])
     diagonal = diagonal[1:]
     count = 0
     for piece in diagonal:
@@ -278,11 +355,11 @@ def change_downleft(row, column, letter, board):
                 diagonal[num] = letter
     second_count = 1
     for piece in diagonal:
-        board[row + second_count][column - second_count] = piece
+        aboard[row + second_count][column - second_count] = piece
         second_count += 1
-    board[row][column] = letter
+    aboard[row][column] = letter
 
-def change_upright(row, column, letter, board):
+def change_upright(row, column, letter, aboard):
     diagonal = []
     for num in range(row):
         if row - num == 0 or column + num == 9:
@@ -302,12 +379,51 @@ def change_upright(row, column, letter, board):
                 diagonal[num] = letter
     second_count = 1
     for piece in diagonal:
-        board[row - second_count][column + second_count] = piece
+        aboard[row - second_count][column + second_count] = piece
         second_count += 1
-    board[row][column] = letter
+    aboard[row][column] = letter
 ###################################################################################################
 #And ends here...
 ###################################################################################################
+
+
+
+#Here comes the magic...
+
+
+def play_game(board):
+    turn = '1'
+    game_is_over = False
+    draw_board(board)
+    while game_is_over == False:
+        if turn == '1':
+            get_player_move('1', board)
+            turn = '2'
+        elif turn == '2':
+            get_player_move('2', board)
+            turn = '1'
+        game_is_over = game_is_playing()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
