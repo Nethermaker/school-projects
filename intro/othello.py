@@ -27,7 +27,6 @@ starting_board = [['This is here to make things easier, along with the first spo
 
 scores = {}
 
-
 #Blank board:
 ##[['This is here to make things easier, along with the first spot in each line'],
 ##         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
@@ -62,11 +61,15 @@ def draw_board(board):
 #I have decided that for the sake of simplicity and my sanity, player 1 will always be X
 
 #NOTE TO SELF: CHANGE THIS TO LETTER AND ROW (ex. 'd4', 'a7', etc.)
-def get_player_move(player, board):
+# if time allows...
+def get_player_move(player):
+    global board
     if player == '1':
         letter = 'X'
+        opposite = 'O'
     else:
         letter = 'O'
+        opposite = 'X'
     pattern = re.compile('[1-8] [1-8]')
     while True:
         move = raw_input('Player {}, choose the row and column you want to move in (ex. \'7 4\'): '.format(player))
@@ -75,40 +78,42 @@ def get_player_move(player, board):
             move = move.split(' ')
             row = int(move[0])
             column = int(move[1])
+            new_board = is_valid(row, column, letter)
+            if new_board == None:
+                print 'That move is not valid! Please make a different move.'
+            else:
+                letter_count = 0
+                opposite_count = 0
+                new_letter_count = 0
+                new_opposite_count = 0
+                for row in board:
+                    for piece in row:
+                        if piece == letter:
+                            letter_count += 1
+                        elif piece == ' ':
+                            pass
+                        elif piece == opposite:
+                            opposite_count += 1
+                for row in new_board:
+                    for piece in row:
+                        if piece == letter:
+                            new_letter_count += 1
+                        elif piece == ' ':
+                            pass
+                        elif piece == opposite:
+                            new_opposite_count += 1
+                if opposite_count == new_opposite_count:
+                    #THIS ISN'T WORKING CORRECTLY
+                    print 'That move is not legal. Make a different move.'
+                else:
+                    board = new_board
+                    draw_board(board)
+                    break
         else:
             print 'Invalid input! Make sure your input matches the example shown.'
-        new_board = make_move(row, column, letter)
-        letter_count = 0
-        opposite_count = 0
-        new_letter_count = 0
-        new_opposite_count = 0
-        for row in board:
-            for piece in row:
-                if piece == letter:
-                    letter_count += 1
-                elif piece == ' ':
-                    pass
-                else:
-                    opposite_count += 1
-        for row in new_board:
-            for piece in row:
-                if piece == letter:
-                    new_letter_count += 1
-                elif piece == ' ':
-                    pass
-                else:
-                    new_opposite_count += 1
         
-        if letter_count + 1 == new_letter_count and opposite_count == new_opposite_count:
-            print 'That move is not legal. Make a different move.'
-        else:
-            board = new_board
-            draw_board(board)
-            break
-    
 
-
-def make_move(row, column, letter):
+def is_valid(row, column, letter):
     new_board = copy.copy(board)
     if letter == 'X':
         opposite = 'O'
@@ -116,36 +121,54 @@ def make_move(row, column, letter):
         opposite = 'X'
     #First: Check to see if the square is empty
     if board[row][column] == ' ':
+        adjacent = []
+        #new_board[row][column + 1],
+        #new_board[row][column - 1],
+        #new_board[row + 1][column],
+        #new_board[row - 1][column],
+        #new_board[row + 1][column + 1],
+        #new_board[row + 1][column - 1],
+        #new_board[row - 1][column + 1],
+        #new_board[row - 1][column - 1]
+        if column + 1 < 9:
+            adjacent.append(new_board[row][column + 1])
+        if column - 1 > 0:
+            adjacent.append(new_board[row][column - 1])
+        if row + 1 < 9:
+            adjacent.append(new_board[row + 1][column])
+        if row - 1 > 0:
+            adjacent.append(new_board[row - 1][column])
+        if row + 1 < 9 and column + 1 < 9:
+            adjacent.append(new_board[row + 1][column + 1])
+        if row + 1 < 9 and column - 1 > 0:
+            adjacent.append(new_board[row + 1][column - 1])
+        if row - 1 > 0 and column + 1 < 9:
+            adjacent.append(new_board[row - 1][column + 1])
+        if row - 1 > 0 and column - 1 > 0:
+            adjacent.append(new_board[row - 1][column - 1])
         #Second: Check to see if there is an opposite piece in an adjacent square
-        if opposite in [new_board[row][column + 1],
-                        new_board[row][column - 1],
-                        new_board[row + 1][column],
-                        new_board[row - 1][column],
-                        new_board[row + 1][column + 1],
-                        new_board[row + 1][column - 1],
-                        new_board[row - 1][column + 1],
-                        new_board[row - 1][column - 1]]:
-            #Third: Check to see if a same piece is in the row, column, or diagonal,
-            # AND isn't behind a same piece
+        if opposite in adjacent:
             change_left(row, column, letter, new_board)
-            draw_board(new_board)
+            #draw_board(new_board)
             change_right(row, column, letter, new_board)
-            draw_board(new_board)
+            #draw_board(new_board)
             change_down(row, column, letter, new_board)
-            draw_board(new_board)
+            #draw_board(new_board)
             change_up(row, column, letter, new_board)
-            draw_board(new_board)
+            #draw_board(new_board)
             change_upleft(row, column, letter, new_board)
-            draw_board(new_board)
+            #draw_board(new_board)
             change_upright(row, column, letter, new_board)
-            draw_board(new_board)
+            #draw_board(new_board)
             change_downleft(row, column, letter, new_board)
-            draw_board(new_board)
+            #draw_board(new_board)
             change_downright(row, column, letter, new_board)
-            draw_board(new_board)
-    #return new_board
-    #board = new_board ##This causes an error all they way at the top...
-    draw_board(new_board)
+            #draw_board(new_board)
+        else:
+            return None
+    else:
+        return None
+    return new_board
 
 def play_again():
     while True:
@@ -397,10 +420,10 @@ def play_game(board):
     draw_board(board)
     while game_is_over == False:
         if turn == '1':
-            get_player_move('1', board)
+            get_player_move('1')
             turn = '2'
         elif turn == '2':
-            get_player_move('2', board)
+            get_player_move('2')
             turn = '1'
         game_is_over = game_is_playing()
 
