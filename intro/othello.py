@@ -1,8 +1,11 @@
+#Notes from the editor are at the way, way bottom
+
 import copy
 import re
 import sys
 import os.path
 import webbrowser
+import time
 
 board = [['This is here to make things easier, along with the first spot in each line'],
          ['dummy', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' '],
@@ -25,7 +28,6 @@ starting_board = [['This is here to make things easier, along with the first spo
          ['dummy', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ']]
 
 
-scores = {}
 
 #Blank board:
 ##[['This is here to make things easier, along with the first spot in each line'],
@@ -39,6 +41,7 @@ scores = {}
 ##         [' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ']]
 
 
+#This is pretty self-explanatory
 def draw_board(board):
     print '  1 2 3 4 5 6 7 8'
     print '1 {}|{}|{}|{}|{}|{}|{}|{}'.format(board[1][1], board[1][2], board[1][3], board[1][4], board[1][5], board[1][6], board[1][7], board[1][8])
@@ -58,10 +61,11 @@ def draw_board(board):
     print '8 {}|{}|{}|{}|{}|{}|{}|{}'.format(board[8][1], board[8][2], board[8][3], board[8][4], board[8][5], board[8][6], board[8][7], board[8][8])
 
    
-#I have decided that for the sake of simplicity and my sanity, player 1 will always be X
 
-#NOTE TO SELF: CHANGE THIS TO LETTER AND ROW (ex. 'd4', 'a7', etc.)
-# if time allows...
+#This function gets the players move and makes sure it follows the format,
+# calls is_valid(), which copies the board, makes the move if it's at least
+# partially valid, and then returns the move. It then returns back here
+# in order to make sure that a valid move actually WAS made, and if it was, updates the board.
 def get_player_move(player):
     global board
     if player == '1':
@@ -72,6 +76,7 @@ def get_player_move(player):
         opposite = 'X'
     pattern = re.compile('[1-8] [1-8]')
     while True:
+        new_board = copy.deepcopy(board)
         move = raw_input('Player {}, choose the row and column you want to move in (ex. \'7 4\'): '.format(player))
         #Checks if the input matches the wanted pattern
         if pattern.match(move):
@@ -102,19 +107,19 @@ def get_player_move(player):
                             pass
                         elif piece == opposite:
                             new_opposite_count += 1
-                if opposite_count == new_opposite_count:
-                    #THIS ISN'T WORKING CORRECTLY
-                    print 'That move is not legal. Make a different move.'
-                else:
-                    board = new_board
+                if new_letter_count > letter_count + 1:
+                    board = copy.deepcopy(new_board)
                     draw_board(board)
                     break
+                else:
+                    print 'That move is not legal! Please make a different move.'
         else:
             print 'Invalid input! Make sure your input matches the example shown.'
         
-
+#Again, this function checks to see if a move is partially valid, makes the
+# move, and then returns a copy of the board
 def is_valid(row, column, letter):
-    new_board = copy.copy(board)
+    new_board = copy.deepcopy(board)
     if letter == 'X':
         opposite = 'O'
     else:
@@ -122,14 +127,6 @@ def is_valid(row, column, letter):
     #First: Check to see if the square is empty
     if board[row][column] == ' ':
         adjacent = []
-        #new_board[row][column + 1],
-        #new_board[row][column - 1],
-        #new_board[row + 1][column],
-        #new_board[row - 1][column],
-        #new_board[row + 1][column + 1],
-        #new_board[row + 1][column - 1],
-        #new_board[row - 1][column + 1],
-        #new_board[row - 1][column - 1]
         if column + 1 < 9:
             adjacent.append(new_board[row][column + 1])
         if column - 1 > 0:
@@ -149,27 +146,20 @@ def is_valid(row, column, letter):
         #Second: Check to see if there is an opposite piece in an adjacent square
         if opposite in adjacent:
             change_left(row, column, letter, new_board)
-            #draw_board(new_board)
             change_right(row, column, letter, new_board)
-            #draw_board(new_board)
             change_down(row, column, letter, new_board)
-            #draw_board(new_board)
             change_up(row, column, letter, new_board)
-            #draw_board(new_board)
             change_upleft(row, column, letter, new_board)
-            #draw_board(new_board)
             change_upright(row, column, letter, new_board)
-            #draw_board(new_board)
             change_downleft(row, column, letter, new_board)
-            #draw_board(new_board)
             change_downright(row, column, letter, new_board)
-            #draw_board(new_board)
         else:
             return None
     else:
         return None
     return new_board
 
+#This is pretty self-explanatory
 def play_again():
     while True:
         answer = raw_input('Would you like to play again (y/n)? ').lower()
@@ -179,7 +169,10 @@ def play_again():
             print 'Have a nice day!'
             break
 
+#Checks to see if scores.txt exists, and if it does, it loads scores from previous sessions.
+# If it does not exist, it creates it.
 def load_scores():
+    scores = {}
     #finds the file path of trivia.py
     file_path = sys.argv[0]
     #gets the path of high_scores.txt (should be the same location)
@@ -192,30 +185,46 @@ def load_scores():
     else:
         with open('scores.txt', 'rb') as infile:
             for line in infile:
+                print line
                 line = line.split(':')
                 scores[line[0]] = line[1].strip()
+    return scores
 
-def save_scores():
+#Saves scores to scores.txt
+def save_scores(scores):
     with open('scores.txt', 'w') as outfile:
         for score in scores:
             outfile.write('{}:{}/{}\n'.format(score, scores[score][0], scores[score][2]))
 
-
-def print_scores():
+#Prints out scores
+def print_scores(scores):
     for session in sorted(scores):
         print 'Session {}: Player 1 = {}, Player 2 = {}'.format(session, scores[session][0], scores[session][2])
 
+#Checks to see if the board is filled, and if it is, it also finds the winner
 def game_is_playing():
+    global board
     count = 0
     for row in board:
         for piece in row:
             if piece == 'X' or piece == 'O':
                 count += 1
+    p1_count = 0
+    p2_count = 0
     if count == 64:
-        return True
+        for row in board:
+            for piece in row:
+                if piece == 'X':
+                    p1_count += 1
+                elif piece == 'O':
+                    p2_count += 1
+        print 'Player 1 finished with {} pieces on the board.'.format(p1_count)
+        print 'Player 2 finished with {} pieces on the board.'.format(p2_count)
+        return True, p1_count, p2_count
     else:
-        return False
-        
+        return False, 0, 0
+
+#Opens a webpage with the rules to Othello
 def rules():
     webbrowser.open('http://www.hannu.se/games/othello/rules.htm')
 
@@ -223,6 +232,9 @@ def rules():
     
 ###################################################################################################
 #The logic for checking and making a move begins here...
+# There is one function for each of the eight directions that a move can go in.
+# These are used in is_valid()
+# Most are also just slight variations on each other
 ###################################################################################################
 def change_left(row, column, letter, aboard):
     original_column = column
@@ -406,15 +418,15 @@ def change_upright(row, column, letter, aboard):
         second_count += 1
     aboard[row][column] = letter
 ###################################################################################################
-#And ends here...
 ###################################################################################################
 
 
 
-#Here comes the magic...
 
 
-def play_game(board):
+#Controls the playing of the game
+def play_game():
+    global board
     turn = '1'
     game_is_over = False
     draw_board(board)
@@ -425,7 +437,67 @@ def play_game(board):
         elif turn == '2':
             get_player_move('2')
             turn = '1'
-        game_is_over = game_is_playing()
+        game_is_over, p1_count, p2_count = game_is_playing()
+    board = copy.deepcopy(starting_board)
+    if p1_count > p2_count:
+        print 'Player 1 wins!'
+        return 1
+    elif p2_count > p1_count:
+        print 'Player 2 wins!'
+        return 2
+    elif p1_count == p2_count:
+        print 'The game was a draw! Nobody gets a point.'
+        return 0
+    
+
+
+#Controls the welcome screen, and handles the scores
+def main():
+    scores = load_scores()
+    p1_wins = 0
+    p2_wins = 0
+    sessions = []
+    for num in scores.keys():
+        sessions.append(int(num))
+    if len(scores) == 0:
+        session = 1
+    else:
+        session = max(sessions) + 1
+    print 'Welcome to Othello!'
+    print 'This is session #{}'.format(session)
+    while True:
+        print
+        print '''1. Play a game against another person
+2. View the rules of Othello
+3. View the scores of previous sessions
+4. Exit'''
+        choice = raw_input('Choose an option: ')
+        if choice == '1':
+            winner = play_game()
+            if winner == 1:
+                p1_wins += 1
+            elif winner == 2:
+                p2_wins += 1
+            print 'Player 1 victories: {}'.format(p1_wins)
+            print 'Player 2 victories: {}'.format(p2_wins)
+        elif choice == '2':
+            print 'Note that Player 1 is \'X\' (black), and Player 2 is \'O\.'
+            time.sleep(2)
+            rules()
+        elif choice == '3':
+            if len(scores) > 0:
+                print_scores(scores)
+            else:
+                print 'There are no previous scores to show.'
+        elif choice == '4':
+            scores[str(session)] = '{}/{}'.format(p1_wins, p2_wins)
+            save_scores(scores)
+            break
+        else:
+            print 'Invalid input! Please choose a number between 1 and 3!'
+            
+    
+main()
 
 
 
@@ -441,12 +513,49 @@ def play_game(board):
 
 
 
+#EDITOR'S NOTES:
+# 
+# You'll probably want to play against another person, and not just yourself
+# You can check the rules using the menu
+# Also, if you finish your game, please exit using the menu in order to save the score
 
 
+# There are some (rare) possibilities that can happen that I have NOT had time to program for.
+# For instance:
+#   It is possible to not be able to play on a turn
+#   It is possible for neither person to be able to play, and thus the game would end early
+# If either of the above end up happening, you'll have to restart the program
+# For the most part, though, the game is completely playable.
 
-
-
-
+#IF YOU RUN INTO ANY ISSUES, PUT THEM IN THE COMMENT SPACE BELOW:
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
 
 
 
