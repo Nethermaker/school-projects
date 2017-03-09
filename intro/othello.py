@@ -448,6 +448,7 @@ def change_upright(row, column, letter, aboard):
 #Controls the playing of the game
 def play_game():
     global board
+    global starting_board
     turn = '1'
     game_is_over = False
     p1_pass = False
@@ -507,7 +508,7 @@ def main():
         print
         print '''1. Play a game against another person
 2. View the rules of Othello
-    (Opens a web page, and shows some things specific to this program.
+    (Opens a web page, and shows some things specific to this program.)
 3. View the scores of previous sessions
 4. Exit'''
         choice = raw_input('Choose an option: ')
