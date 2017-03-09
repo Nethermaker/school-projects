@@ -1,4 +1,19 @@
-#Notes from the editor are at the way, way bottom
+#EDITOR'S NOTES:
+# 
+# You'll probably want to play against another person, and not just yourself
+# You can check the rules using the menu
+# Also, if you finish your game, please exit using the menu in order to save the score
+
+
+# There are some (rare) possibilities that can happen that I have NOT had time to program for.
+# For instance:
+#   It is possible to not be able to play on a turn
+#   It is possible for neither person to be able to play, and thus the game would end early
+# If either of the above end up happening, you have the ability to type 'pass' on your turn.
+# THIS IS ONLY LEGAL IF YOU CANNOT MOVE, but I haven't had time to program a check for that.
+# If BOTH players cannot move, and type 'pass' in a row, then they will have the option to
+# end the game. If they choose to do so, the current number of pieces on the board will be
+# used to determine a winner. This is how it works in a real game of Othello
 
 import copy
 import re
@@ -43,7 +58,7 @@ starting_board = [['This is here to make things easier, along with the first spo
 
 #This is pretty self-explanatory
 def draw_board(board):
-    print '  1 2 3 4 5 6 7 8'
+    print '  a b c d e f g h'
     print '1 {}|{}|{}|{}|{}|{}|{}|{}'.format(board[1][1], board[1][2], board[1][3], board[1][4], board[1][5], board[1][6], board[1][7], board[1][8])
     print '  ---------------'
     print '2 {}|{}|{}|{}|{}|{}|{}|{}'.format(board[2][1], board[2][2], board[2][3], board[2][4], board[2][5], board[2][6], board[2][7], board[2][8])
@@ -68,21 +83,28 @@ def draw_board(board):
 # in order to make sure that a valid move actually WAS made, and if it was, updates the board.
 def get_player_move(player):
     global board
+    letters = {'a':1,
+               'b':2,
+               'c':3,
+               'd':4,
+               'e':5,
+               'f':6,
+               'g':7,
+               'h':8}
     if player == '1':
         letter = 'X'
         opposite = 'O'
     else:
         letter = 'O'
         opposite = 'X'
-    pattern = re.compile('[1-8] [1-8]')
+    pattern = re.compile('[a-h][1-8]')
     while True:
         new_board = copy.deepcopy(board)
-        move = raw_input('Player {}, choose the row and column you want to move in (ex. \'7 4\'): '.format(player))
+        move = raw_input('Player {}, choose the column and row you want to move in (ex. \'c6\'): '.format(player))
         #Checks if the input matches the wanted pattern
         if pattern.match(move):
-            move = move.split(' ')
-            row = int(move[0])
-            column = int(move[1])
+            row = int(move[1])
+            column = letters[move[0]]
             new_board = is_valid(row, column, letter)
             if new_board == None:
                 print 'That move is not valid! Please make a different move.'
@@ -110,9 +132,11 @@ def get_player_move(player):
                 if new_letter_count > letter_count + 1:
                     board = copy.deepcopy(new_board)
                     draw_board(board)
-                    break
+                    return False
                 else:
                     print 'That move is not legal! Please make a different move.'
+        elif move.lower() == 'pass':
+            return True
         else:
             print 'Invalid input! Make sure your input matches the example shown.'
         
@@ -185,7 +209,6 @@ def load_scores():
     else:
         with open('scores.txt', 'rb') as infile:
             for line in infile:
-                print line
                 line = line.split(':')
                 scores[line[0]] = line[1].strip()
     return scores
@@ -211,18 +234,16 @@ def game_is_playing():
                 count += 1
     p1_count = 0
     p2_count = 0
+    for row in board:
+        for piece in row:
+            if piece == 'X':
+                p1_count += 1
+            elif piece == 'O':
+                p2_count += 1
     if count == 64:
-        for row in board:
-            for piece in row:
-                if piece == 'X':
-                    p1_count += 1
-                elif piece == 'O':
-                    p2_count += 1
-        print 'Player 1 finished with {} pieces on the board.'.format(p1_count)
-        print 'Player 2 finished with {} pieces on the board.'.format(p2_count)
         return True, p1_count, p2_count
     else:
-        return False, 0, 0
+        return False, p1_count, p2_count
 
 #Opens a webpage with the rules to Othello
 def rules():
@@ -429,24 +450,41 @@ def play_game():
     global board
     turn = '1'
     game_is_over = False
+    p1_pass = False
+    p2_pass = False
     draw_board(board)
     while game_is_over == False:
         if turn == '1':
-            get_player_move('1')
+            p1_pass = get_player_move('1')
             turn = '2'
         elif turn == '2':
-            get_player_move('2')
+            p2_pass = get_player_move('2')
             turn = '1'
         game_is_over, p1_count, p2_count = game_is_playing()
+        if p1_pass == True and p2_pass == True:
+            print 'Are you sure you want to end the game? This game WILL STILL BE COUNTED if you do!'
+            choice = raw_input('Type \'YES\' (all caps) in order to confirm: ')
+            if choice == 'YES':
+                game_is_over = True
+            else:
+                p1_pass = False
+                p2_pass = False
+                print 'The game will now resume play as normal.'
     board = copy.deepcopy(starting_board)
     if p1_count > p2_count:
         print 'Player 1 wins!'
+        print 'Player 1 finished with {} pieces on the board.'.format(p1_count)
+        print 'Player 2 finished with {} pieces on the board.'.format(p2_count)
         return 1
     elif p2_count > p1_count:
         print 'Player 2 wins!'
+        print 'Player 1 finished with {} pieces on the board.'.format(p1_count)
+        print 'Player 2 finished with {} pieces on the board.'.format(p2_count)
         return 2
     elif p1_count == p2_count:
         print 'The game was a draw! Nobody gets a point.'
+        print 'Player 1 finished with {} pieces on the board.'.format(p1_count)
+        print 'Player 2 finished with {} pieces on the board.'.format(p2_count)
         return 0
     
 
@@ -469,6 +507,7 @@ def main():
         print
         print '''1. Play a game against another person
 2. View the rules of Othello
+    (Opens a web page, and shows some things specific to this program.
 3. View the scores of previous sessions
 4. Exit'''
         choice = raw_input('Choose an option: ')
@@ -481,7 +520,20 @@ def main():
             print 'Player 1 victories: {}'.format(p1_wins)
             print 'Player 2 victories: {}'.format(p2_wins)
         elif choice == '2':
-            print 'Note that Player 1 is \'X\' (black), and Player 2 is \'O\.'
+            print
+            print
+            print '''Note that Player 1 is \'X\' (black), and Player 2 is \'O\.
+There are some (rare) possibilities that can happen that I have NOT had time to program for.
+For instance:
+   It is possible to not be able to play on a turn
+   It is possible for neither person to be able to play, and thus the game would end early
+If either of the above end up happening, you have the ability to type 'pass' on your turn.
+THIS IS ONLY LEGAL IF YOU CANNOT MOVE, but I haven't had time to program a check for that.
+If BOTH players cannot move, and type 'pass' in a row, then they will have the option to
+end the game. If they choose to do so, the current number of pieces on the board will be
+used to determine a winner. This is how it works in a real game of Othello.
+
+Also note that if you want to save the scores from this session, you must exit using the menu.'''
             time.sleep(2)
             rules()
         elif choice == '3':
@@ -513,49 +565,7 @@ main()
 
 
 
-#EDITOR'S NOTES:
-# 
-# You'll probably want to play against another person, and not just yourself
-# You can check the rules using the menu
-# Also, if you finish your game, please exit using the menu in order to save the score
 
-
-# There are some (rare) possibilities that can happen that I have NOT had time to program for.
-# For instance:
-#   It is possible to not be able to play on a turn
-#   It is possible for neither person to be able to play, and thus the game would end early
-# If either of the above end up happening, you'll have to restart the program
-# For the most part, though, the game is completely playable.
-
-#IF YOU RUN INTO ANY ISSUES, PUT THEM IN THE COMMENT SPACE BELOW:
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
 
 
 
