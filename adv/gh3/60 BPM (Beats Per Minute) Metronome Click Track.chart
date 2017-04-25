@@ -1,0 +1,36 @@
+[Song]
+{
+	Name = "60 BPM (Beats Per Minute) Metronome Click Track"
+	Artist = "Unknown Artist"
+	Charter = "Nethermaker"
+	Offset = 0
+	Resolution = 192
+	Player2 = bass
+	Difficulty = 0
+	PreviewStart = 0.00
+	PreviewEnd = 0.00
+	Genre = "rock"
+	MediaType = "cd"
+	MusicStream = "60 BPM (Beats Per Minute) Metronome Click Track.wav"
+}
+[SyncTrack]
+{
+	0 = B 60000
+	0 = TS 4
+	9216 = B 60000
+}
+[Events]
+{
+}
+[ExpertSingle]
+{
+	0 = N 0 0
+	192 = N 1 0
+	384 = N 2 0
+	576 = N 3 0
+	768 = N 4 0
+	960 = N 0 576
+	960 = N 1 576
+	960 = N 2 576
+	960 = N 3 576
+}
