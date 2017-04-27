@@ -53,7 +53,8 @@ class Song:
     def __init__(self, filename):
 
         self.chart = filename
-        self.song = ''
+        self.song_name = ''
+        self.audio_stream = None
 
         self.resolution = 0
         self.hopo_distance = (65*self.resolution) / 192
@@ -81,7 +82,8 @@ class Song:
             for line in infile:
                 line = line.strip()
                 if 'AudioStream' in line:
-                    self.song = line[14:]
+                    self.song_name = line[14:]
+                    self.audio_stream = pygame.mixer.Sound(self.song_name)
                 elif 'Resolution' in line:
                     self.resolution = int(line[13:])
                 elif 'Offset' in line:
@@ -170,8 +172,10 @@ class GameMain():
 
         self.frets.add(self.fret0, self.fret1, self.fret2, self.fret3, self.fret4)
 
-        self.song = Song('test.chart')
+        self.song = Song('cliffs_test.chart')
         self.song.load_chart()
+        self.song.audio_stream.play()
+        
 
     def main_loop(self):
         while not self.done:
@@ -239,6 +243,15 @@ if __name__ == '__main__':
     game = GameMain()
     game.main_loop()
 
+
+#notes to self because I'm not smart:
+    #Note position is in ticks
+    #Resolution is ticks per beat
+    #Notes are moving at 4 pixels/frame, for 240 pixels/second
+    #Bpm is beats per minute, divide by 60 to get beats per second
+    #To get the beat that the note is on divide its position by resolution,
+    # then multiply beat by 240 (pixels/second) and add some amount to get y position.
+    #I don't know why I couldn't figure this out earlier.
 
 
 
