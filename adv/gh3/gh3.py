@@ -5,13 +5,21 @@ from pygame.locals import *
 
 class Note(pygame.sprite.Sprite):
 
-    def __init__(self, tick, y, color, hopo=False, hold=0):
+    def __init__(self, tick, y, color, song, hold=0):
         pygame.sprite.Sprite.__init__(self)
 
         self.tick = tick
         self.color = color
-        self.hopo = hopo
+        self.song = song
+        self.hopo = False
+        try:
+            if self.tick - self.song.note_list[-2].tick <= self.song.hopo_distance:
+                hopo = True
+        except:
+            pass
         self.hold = hold
+        self.song = song
+        self.speed = 4
 
         self.y = y
         self.x = 0
@@ -34,7 +42,10 @@ class Note(pygame.sprite.Sprite):
 
     def update(self):
 
-        self.rect.y += 4
+        self.rect.y += self.speed
+
+        if self.rect.y > 900:
+            self.kill()
 
 
 class Song:
@@ -45,28 +56,78 @@ class Song:
         self.song = ''
 
         self.resolution = 0
+        self.hopo_distance = (65*self.resolution) / 192
         self.offset = 0
+        self.bpm = 0
+        self.bps = 0
+        self.tps = 0
+        self.tpf = 0
+        self.previous_tick = 0
         self.current_tick = 0
+
+        self.pixels_per_second = 240
+        self.pixels_per_beat = 0
         
         self.current_bpm = 0
         self.bpm_dict = {}
 
-        self.last_note_hit = False
+        self.previous_note_hit = False
 
-        #self.note_list = [Note(192, 400, 'green', hopo=True),
-                          #Note(284, 300, 'blue')]
         self.note_list = []
+        self.loaded_notes = []
 
     def load_chart(self):
         with open(self.chart, 'rb') as infile:
             for line in infile:
                 line = line.strip()
-                if 'Resolution' in line:
+                if 'AudioStream' in line:
+                    self.song = line[14:]
+                elif 'Resolution' in line:
                     self.resolution = int(line[13:])
                 elif 'Offset' in line:
                     self.offset = int(line[9:])
+                elif 'BPM' in line:
+                    self.bpm = int(line[6:])
                 elif ' N ' in line:
-                    line = line.split()
+                    line = line.split(' ')
+                    tick = int(line[0])
+                    note_type = int(line[3])
+                    color = ''
+                    if note_type == 0:
+                        color = 'green'
+                        self.note_list.append(Note(tick, -tick/4, color, self))
+                    elif note_type == 1:
+                        color = 'red'
+                        self.note_list.append(Note(tick, -tick/4, color, self))
+                    elif note_type == 2:
+                        color = 'yellow'
+                        self.note_list.append(Note(tick, -tick/4, color, self))
+                    elif note_type == 3:
+                        color = 'blue'
+                        self.note_list.append(Note(tick, -tick/4, color, self))
+                    elif note_type == 4:
+                        color = 'orange'
+                        self.note_list.append(Note(tick, -tick/4, color, self))
+                    elif note_type == 5:
+                        if self.note_list[-1].hopo == True:
+                            self.note_list[-1].hopo = False
+                        else:
+                            self.note_list[-1].hopo = True
+
+        self.bps = self.bpm / 60.0
+        self.tps = self.bps * self.resolution
+        self.tpf = self.tps / 60.0
+        #self.pixels_per_beat = self.bps * self.pixels_per_second
+
+    def update(self):
+
+        self.previous_tick = self.current_tick
+        self.current_tick += self.tpf
+
+        
+
+        
+                    
                     
 
         
@@ -115,6 +176,7 @@ class GameMain():
     def main_loop(self):
         while not self.done:
             self.handle_events()
+            self.song.update()
             for note in self.song.note_list:
                 note.update()
             self.draw()
