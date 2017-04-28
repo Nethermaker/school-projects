@@ -12,11 +12,11 @@ class Note(pygame.sprite.Sprite):
         self.color = color
         self.song = song
         self.hopo = False
-        try:
-            if self.tick - self.song.note_list[-2].tick <= self.song.hopo_distance:
-                hopo = True
-        except:
-            pass
+        if len(self.song.note_list) <= 1:
+            self.hopo = False
+        else:
+            if self.tick - self.song.note_list[-1].tick <= self.song.hopo_distance:
+                self.hopo = True
         self.hold = hold
         self.song = song
         self.speed = 4
@@ -45,7 +45,9 @@ class Note(pygame.sprite.Sprite):
         self.rect.y += self.speed
 
         if self.rect.y > 900:
+            self.song.note_list.remove(self)
             self.kill()
+            self.song.previous_note_hit = False
 
 
 class Song:
@@ -95,21 +97,25 @@ class Song:
                     tick = int(line[0])
                     note_type = int(line[3])
                     color = ''
+                    note_beat = (tick / float(self.resolution)) + self.offset
+                    pixels_per_beat = (self.bpm/60.0) * 240
+                    note_y = 720.0 - (note_beat * pixels_per_beat)
+                    #print note_beat, note_y
                     if note_type == 0:
                         color = 'green'
-                        self.note_list.append(Note(tick, -tick/4, color, self))
+                        self.note_list.append(Note(tick, note_y/5.2, color, self))
                     elif note_type == 1:
                         color = 'red'
-                        self.note_list.append(Note(tick, -tick/4, color, self))
+                        self.note_list.append(Note(tick, note_y/5.2, color, self))
                     elif note_type == 2:
                         color = 'yellow'
-                        self.note_list.append(Note(tick, -tick/4, color, self))
+                        self.note_list.append(Note(tick, note_y/5.2, color, self))
                     elif note_type == 3:
                         color = 'blue'
-                        self.note_list.append(Note(tick, -tick/4, color, self))
+                        self.note_list.append(Note(tick, note_y/5.2, color, self))
                     elif note_type == 4:
                         color = 'orange'
-                        self.note_list.append(Note(tick, -tick/4, color, self))
+                        self.note_list.append(Note(tick, note_y/5.2, color, self))
                     elif note_type == 5:
                         if self.note_list[-1].hopo == True:
                             self.note_list[-1].hopo = False
@@ -136,7 +142,7 @@ class Song:
 
 class Fret(pygame.sprite.Sprite):
 
-    def __init__(self, x, y, color):
+    def __init__(self, x, y, color, song):
         pygame.sprite.Sprite.__init__(self)
 
         self.x = x
@@ -148,7 +154,27 @@ class Fret(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center = (self.x, self.y)
 
-        self.pressed = False   
+        self.pressed = False
+
+        self.song = song
+
+
+    def check_for_strum(self):
+
+        note_hit_list = pygame.sprite.spritecollide(self, self.song.note_list, False)
+
+        for note in note_hit_list:
+            self.song.note_list.remove(note)
+            self.song.previous_note_hit = True
+
+    def check_for_hopo(self):
+
+        note_hit_list = pygame.sprite.spritecollide(self, self.song.note_list, False)
+
+        for note in note_hit_list:
+            if note.hopo == True and self.song.previous_note_hit == True and self.pressed == True:
+                self.song.note_list.remove(note)
+                self.song.previous_note_hit = True
 
 class GameMain():
 
@@ -163,17 +189,18 @@ class GameMain():
         self.screen = pygame.display.set_mode((self.width, self.height))
         self.clock = pygame.time.Clock()
 
+        self.song = Song('thestage.chart')
+        self.song.load_chart()
+
         self.frets = pygame.sprite.Group()
-        self.fret0 = Fret(540, 720, Color('green'))
-        self.fret1 = Fret(590, 720, Color('red'))
-        self.fret2 = Fret(640, 720, Color('yellow'))
-        self.fret3 = Fret(690, 720, Color('blue'))
-        self.fret4 = Fret(740, 720, Color('orange'))
+        self.fret0 = Fret(540, 720, Color('green'), self.song)
+        self.fret1 = Fret(590, 720, Color('red'), self.song)
+        self.fret2 = Fret(640, 720, Color('yellow'), self.song)
+        self.fret3 = Fret(690, 720, Color('blue'), self.song)
+        self.fret4 = Fret(740, 720, Color('orange'), self.song)
 
         self.frets.add(self.fret0, self.fret1, self.fret2, self.fret3, self.fret4)
 
-        self.song = Song('cliffs_test.chart')
-        self.song.load_chart()
         self.song.audio_stream.play()
         
 
@@ -183,6 +210,8 @@ class GameMain():
             self.song.update()
             for note in self.song.note_list:
                 note.update()
+            for fret in self.frets:
+                fret.check_for_hopo()
             self.draw()
             self.clock.tick(60)
         pygame.quit()
@@ -195,7 +224,7 @@ class GameMain():
             if fret.pressed:
                 pygame.draw.circle(self.screen, Color('black'), fret.rect.center, 15)
 
-        for note in self.song.note_list:
+        for note in self.song.note_list[0:1000]:
             pygame.draw.circle(self.screen, Color(note.color), note.rect.center, 20)
             if note.hopo == True:
                 pygame.draw.circle(self.screen, Color('white'), note.rect.center, 10)
@@ -226,7 +255,9 @@ class GameMain():
                 elif event.key == K_g:
                     self.fret4.pressed = True
                 elif event.key == K_LEFT or event.key == K_RIGHT:
-                    print 'strum'
+                    for fret in self.frets:
+                        if fret.pressed:
+                            fret.check_for_strum()
             elif event.type == KEYUP:
                 if event.key == K_a:
                     self.fret0.pressed = False
