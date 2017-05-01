@@ -12,7 +12,7 @@ class Note(pygame.sprite.Sprite):
         self.color = color
         self.song = song
         self.hopo = False
-        if len(self.song.note_list) <= 1:
+        if len(self.song.note_list) == 0:
             self.hopo = False
         else:
             if self.tick - self.song.note_list[-1].tick <= self.song.hopo_distance:
@@ -44,10 +44,11 @@ class Note(pygame.sprite.Sprite):
 
         self.rect.y += self.speed
 
-        if self.rect.y > 900:
+        if self.rect.center[1] > 740:
+            self.song.previous_note_hit = False
+        elif self.rect.y >900:
             self.song.note_list.remove(self)
             self.kill()
-            self.song.previous_note_hit = False
 
 
 class Song:
@@ -59,7 +60,7 @@ class Song:
         self.audio_stream = None
 
         self.resolution = 0
-        self.hopo_distance = (65*self.resolution) / 192
+        self.hopo_distance = 0
         self.offset = 0
         self.bpm = 0
         self.bps = 0
@@ -88,8 +89,10 @@ class Song:
                     self.audio_stream = pygame.mixer.Sound(self.song_name)
                 elif 'Resolution' in line:
                     self.resolution = int(line[13:])
+                    self.hopo_distance = (65*self.resolution) / 192
+                    print self.hopo_distance
                 elif 'Offset' in line:
-                    self.offset = int(line[9:])
+                    self.offset = float(line[9:])
                 elif 'BPM' in line:
                     self.bpm = int(line[6:])
                 elif ' N ' in line:
@@ -142,8 +145,10 @@ class Song:
 
 class Fret(pygame.sprite.Sprite):
 
-    def __init__(self, x, y, color, song):
+    def __init__(self, x, y, color, num, game):
         pygame.sprite.Sprite.__init__(self)
+
+        self.num = num
 
         self.x = x
         self.y = y
@@ -155,26 +160,31 @@ class Fret(pygame.sprite.Sprite):
         self.rect.center = (self.x, self.y)
 
         self.pressed = False
-
-        self.song = song
+        self.game = game
 
 
     def check_for_strum(self):
 
-        note_hit_list = pygame.sprite.spritecollide(self, self.song.note_list, False)
+        note_hit_list = pygame.sprite.spritecollide(self, self.game.song.note_list, False)
 
         for note in note_hit_list:
-            self.song.note_list.remove(note)
-            self.song.previous_note_hit = True
+            if note.rect.center[1] > 700 and note.rect.center[1] < 740:
+                for fret in self.game.frets:
+                    if not fret.num > self.num and fret.pressed and note in self.game.song.note_list:
+                        self.game.song.note_list.remove(note)
+                        self.game.song.previous_note_hit = True
 
     def check_for_hopo(self):
 
-        note_hit_list = pygame.sprite.spritecollide(self, self.song.note_list, False)
+        note_hit_list = pygame.sprite.spritecollide(self, self.game.song.note_list, False)
 
         for note in note_hit_list:
-            if note.hopo == True and self.song.previous_note_hit == True and self.pressed == True:
-                self.song.note_list.remove(note)
-                self.song.previous_note_hit = True
+            if note.rect.center[1] > 700 and note.rect.center[1] < 740:
+                if note.hopo == True and self.game.song.previous_note_hit == True and self.pressed == True:
+                    for fret in self.game.frets:
+                        if not fret.num > self.num and fret.pressed and note in self.game.song.note_list:
+                            self.game.song.note_list.remove(note)
+                            self.game.song.previous_note_hit = True
 
 class GameMain():
 
@@ -193,11 +203,11 @@ class GameMain():
         self.song.load_chart()
 
         self.frets = pygame.sprite.Group()
-        self.fret0 = Fret(540, 720, Color('green'), self.song)
-        self.fret1 = Fret(590, 720, Color('red'), self.song)
-        self.fret2 = Fret(640, 720, Color('yellow'), self.song)
-        self.fret3 = Fret(690, 720, Color('blue'), self.song)
-        self.fret4 = Fret(740, 720, Color('orange'), self.song)
+        self.fret0 = Fret(540, 720, Color('green'), 0, self)
+        self.fret1 = Fret(590, 720, Color('red'), 1, self)
+        self.fret2 = Fret(640, 720, Color('yellow'), 2, self)
+        self.fret3 = Fret(690, 720, Color('blue'), 3, self)
+        self.fret4 = Fret(740, 720, Color('orange'), 4, self)
 
         self.frets.add(self.fret0, self.fret1, self.fret2, self.fret3, self.fret4)
 
