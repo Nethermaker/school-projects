@@ -1,4 +1,4 @@
-import pygame, random, math
+import pygame, random, math, pygbutton
 
 from pygame.locals import *
 
@@ -26,6 +26,7 @@ class Note(pygame.sprite.Sprite):
         self.speed = 6
         self.dead = False
         self.chord = chord
+        self.missed = False
 
         self.y = y
         self.x = 0
@@ -55,7 +56,9 @@ class Note(pygame.sprite.Sprite):
             self.dead = True
             self.kill()
         elif self.rect.center[1] > 740 and not self.dead and self in self.song.loaded_notes:
-            self.song.previous_note_hit = False
+            if self.missed == False:
+                self.song.previous_note_hit = False
+                self.missed = True
 
 
 class Song:
@@ -229,7 +232,7 @@ class GameMain():
     done = False
     color_bg = Color('black')
 
-    def __init__(self, width=1280, height=800):
+    def __init__(self, chart, width=1280, height=800):
         
         pygame.mixer.pre_init(44100,-16,2,2048)
         pygame.init()
@@ -237,7 +240,8 @@ class GameMain():
         self.screen = pygame.display.set_mode((self.width, self.height))
         self.clock = pygame.time.Clock()
 
-        self.song = Song('thestage.chart')
+        self.chart = chart
+        self.song = Song(self.chart)
         self.song.load_chart()
 
         self.frets = pygame.sprite.Group()
@@ -319,10 +323,55 @@ class GameMain():
                 elif event.key == K_g:
                     self.fret4.pressed = False
 
-if __name__ == '__main__':
-    game = GameMain()
-    game.main_loop()
 
+
+
+class Menu():
+
+    done = False
+    color_bg = Color('gray30')
+
+    def __init__(self, width=800, height=600):
+
+        pygame.init()
+        self.width, self.height = width, height
+        self.screen = pygame.display.set_mode((self.width, self.height))
+        self.clock = pygame.time.Clock()
+
+    def main_loop(self):
+        while not self.done:
+            self.handle_events()
+            self.draw()
+            self.clock.tick(60)
+        pygame.quit()
+
+    def draw(self):
+        self.screen.fill(self.color_bg)
+
+        pygame.display.flip() #put all the work on the screen
+
+    def handle_events(self):
+
+        events = pygame.event.get()
+        
+        for event in events:
+
+            if event.type == pygame.QUIT:
+                self.done = True
+            elif event.type == KEYDOWN:
+                if event.key == K_ESCAPE:
+                    self.done = True
+                if event.key == K_p:
+                    self.done = True
+                    game = GameMain('thestage.chart')
+                    game.main_loop()
+
+
+if __name__ == '__main__':
+    menu = Menu()
+    menu.main_loop()
+    #game = GameMain('thestage.chart')
+    #game.main_loop()
 
 #notes to self because I'm not smart:
     #Note position is in ticks
