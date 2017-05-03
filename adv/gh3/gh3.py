@@ -50,12 +50,12 @@ class Note(pygame.sprite.Sprite):
 
         self.rect.y += self.speed
 
-        if self.rect.center[1] > 740 and not self.dead and self in self.song.loaded_notes:
-            self.song.previous_note_hit = False
-        elif self.rect.y > 900 and not self.dead:
+        if self.rect.center[1] > 830 and not self.dead:
             self.song.loaded_notes.remove(self)
             self.dead = True
             self.kill()
+        elif self.rect.center[1] > 740 and not self.dead and self in self.song.loaded_notes:
+            self.song.previous_note_hit = False
 
 
 class Song:
@@ -73,7 +73,9 @@ class Song:
         self.divisor = 0
         self.bps = 0
         self.tps = 0
+        self.tpf = 0
         self.current_y = 0
+        self.current_tick = 0
 
         self.pixels_per_second = 240
         self.pixels_per_beat = 0
@@ -96,14 +98,14 @@ class Song:
                 elif 'Resolution' in line:
                     self.resolution = int(line[13:])
                     self.hopo_distance = (65*self.resolution) / 192
-                    print self.hopo_distance
+                    #print self.hopo_distance
                 elif 'Offset' in line:
                     self.offset = float(line[9:])
                 elif 'BPM' in line:
                     self.bpm = int(line[6:])
                 elif 'Divisor' in line:
                     self.divisor = float(line[10:])
-                    print self.divisor
+                    #print self.divisor
                 elif ' N ' in line:
                     line = line.split(' ')
                     tick = int(line[0])
@@ -142,13 +144,18 @@ class Song:
                             self.note_list[-1].hopo = True
 
         self.bps = self.bpm / 60.0
-        #self.pixels_per_beat = self.bps * self.pixels_per_second
+        self.tps = self.bps * self.resolution
+        self.tpf = self.tps /60.0
+        print self.tpf
 
     def update(self):
 
         self.current_y -= 6
+        self.current_tick += self.tpf
+        self.current_tick
         for note in self.note_list:
-            if self.current_y - 2000 <= note.rect.y and note.dead == False and note not in self.loaded_notes:
+            #if self.current_y - 2000 <= note.rect.center[1] and note.dead == False and note not in self.loaded_notes:
+            if self.current_tick + (self.resolution*10) >= note.tick and note.dead == False and note not in self.loaded_notes:
                 self.loaded_notes.append(note)
         for note in self.loaded_notes:
             if note.dead:
@@ -266,7 +273,7 @@ class GameMain():
             if fret.pressed:
                 pygame.draw.circle(self.screen, Color('black'), fret.rect.center, 15)
 
-        for note in self.song.note_list[:1000]:
+        for note in self.song.loaded_notes:
             pygame.draw.circle(self.screen, Color(note.color), note.rect.center, 20)
             if note.hopo == True:
                 pygame.draw.circle(self.screen, Color('white'), note.rect.center, 10)
