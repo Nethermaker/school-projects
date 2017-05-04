@@ -5,7 +5,7 @@ from pygame.locals import *
 
 class Note(pygame.sprite.Sprite):
 
-    def __init__(self, tick, y, color, chord, song, hold=0):
+    def __init__(self, tick, y, color, chord, song, sustain):
         pygame.sprite.Sprite.__init__(self)
 
         self.tick = tick
@@ -21,7 +21,10 @@ class Note(pygame.sprite.Sprite):
                 if self.tick - self.song.note_list[-1].tick <= self.song.hopo_distance:
                     if self.song.note_list[-1].color != self.color:
                         self.hopo = True
-        self.hold = hold
+        self.sustain_y = sustain
+        self.sustain = False
+        if self.sustain_y != 0:
+            self.sustain = True
         self.song = song
         self.speed = 6
         self.dead = False
@@ -50,6 +53,8 @@ class Note(pygame.sprite.Sprite):
     def update(self):
 
         self.rect.y += self.speed
+        if self.sustain:
+            self.sustain_y += self.speed
 
         if self.rect.center[1] > 830 and not self.dead:
             self.song.loaded_notes.remove(self)
@@ -118,6 +123,13 @@ class Song:
                     pixels_per_beat = (self.bpm/60.0) * 360
                     note_y = (720.0 - (note_beat * pixels_per_beat)) / self.divisor
                     chord = False
+                    sustain = 0
+                    if int(line[-1]):
+                        sustain = int(line[-1]) + tick
+                        sustain_end_beat = (sustain / float(self.resolution)) + self.offset
+                        sustain = (720.0 - (sustain_end_beat * pixels_per_beat)) / self.divisor
+                        sustain = int(round(sustain))
+                        #print sustain
                     if len(self.note_list) != 0:
                         if tick == self.note_list[-1].tick and note_type != 5:
                             chord = True
@@ -127,19 +139,19 @@ class Song:
                     #print note_beat, note_y
                     if note_type == 0:
                         color = 'green'
-                        self.note_list.append(Note(tick, note_y, color, chord, self))
+                        self.note_list.append(Note(tick, note_y, color, chord, self, sustain))
                     elif note_type == 1:
                         color = 'red'
-                        self.note_list.append(Note(tick, note_y, color, chord, self))
+                        self.note_list.append(Note(tick, note_y, color, chord, self, sustain))
                     elif note_type == 2:
                         color = 'yellow'
-                        self.note_list.append(Note(tick, note_y, color, chord, self))
+                        self.note_list.append(Note(tick, note_y, color, chord, self, sustain))
                     elif note_type == 3:
                         color = 'blue'
-                        self.note_list.append(Note(tick, note_y, color, chord, self))
+                        self.note_list.append(Note(tick, note_y, color, chord, self, sustain))
                     elif note_type == 4:
                         color = 'orange'
-                        self.note_list.append(Note(tick, note_y, color, chord, self))
+                        self.note_list.append(Note(tick, note_y, color, chord, self, sustain))
                     elif note_type == 5:
                         if self.note_list[-1].hopo == True:
                             self.note_list[-1].hopo = False
@@ -149,12 +161,13 @@ class Song:
         self.bps = self.bpm / 60.0
         self.tps = self.bps * self.resolution
         self.tpf = self.tps /60.0
-        print self.tpf
+        #print self.tpf
 
     def update(self):
 
         self.current_y -= 6
-        self.current_tick += self.tpf
+        self.current_tick += self.tpf*1.04
+        #The *1.04 is needed because the game generally runs at 58 FPS, and was falling behind
         self.current_tick
         for note in self.note_list:
             #if self.current_y - 2000 <= note.rect.center[1] and note.dead == False and note not in self.loaded_notes:
@@ -279,6 +292,8 @@ class GameMain():
 
         for note in self.song.loaded_notes:
             pygame.draw.circle(self.screen, Color(note.color), note.rect.center, 20)
+            if note.sustain:
+                pygame.draw.line(self.screen, Color(note.color), note.rect.center, (note.rect.center[0], note.sustain_y))
             if note.hopo == True:
                 pygame.draw.circle(self.screen, Color('white'), note.rect.center, 10)
                 
@@ -338,6 +353,11 @@ class Menu():
         self.screen = pygame.display.set_mode((self.width, self.height))
         self.clock = pygame.time.Clock()
 
+        self.thestage = pygbutton.PygButton((325, 175, 150, 50), 'The Stage')
+        self.cliffs = pygbutton.PygButton((325, 275, 150, 50), 'Cliffs of Dover')
+        self.hail = pygbutton.PygButton((325, 375, 150, 50), 'Hail to the King')
+        self.peace = pygbutton.PygButton((325, 475, 150, 50), 'Peace of Mind')
+
     def main_loop(self):
         while not self.done:
             self.handle_events()
@@ -347,6 +367,11 @@ class Menu():
 
     def draw(self):
         self.screen.fill(self.color_bg)
+
+        self.thestage.draw(self.screen)
+        self.cliffs.draw(self.screen)
+        self.hail.draw(self.screen)
+        self.peace.draw(self.screen)
 
         pygame.display.flip() #put all the work on the screen
 
@@ -361,10 +386,19 @@ class Menu():
             elif event.type == KEYDOWN:
                 if event.key == K_ESCAPE:
                     self.done = True
-                if event.key == K_p:
-                    self.done = True
-                    game = GameMain('thestage.chart')
-                    game.main_loop()
+
+            if 'click' in self.thestage.handleEvent(event):
+                game = GameMain('thestage.chart')
+                game.main_loop()
+            if 'click' in self.cliffs.handleEvent(event):
+                game = GameMain('cliffs.chart')
+                game.main_loop()
+            if 'click' in self.hail.handleEvent(event):
+                game = GameMain('hail.chart')
+                game.main_loop()
+            if 'click' in self.peace.handleEvent(event):
+                game = GameMain('peaceofmind.chart')
+                game.main_loop()
 
 
 if __name__ == '__main__':
