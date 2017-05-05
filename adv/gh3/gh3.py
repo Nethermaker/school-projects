@@ -25,6 +25,7 @@ class Note(pygame.sprite.Sprite):
         self.sustain = False
         if self.sustain_y != 0:
             self.sustain = True
+        self.held = False
         self.song = song
         self.speed = 6
         self.dead = False
@@ -57,9 +58,15 @@ class Note(pygame.sprite.Sprite):
             self.sustain_y += self.speed
 
         if self.rect.center[1] > 830 and not self.dead:
-            self.song.loaded_notes.remove(self)
-            self.dead = True
-            self.kill()
+            if self.sustain != 0:
+                if self.sustain_y > 830:
+                    self.song.loaded_notes.remove(self)
+                    self.dead = True
+                    self.kill()
+            else:
+                self.song.loaded_notes.remove(self)
+                self.dead = True
+                self.kill()
         elif self.rect.center[1] > 740 and not self.dead and self in self.song.loaded_notes:
             if self.missed == False:
                 self.song.previous_note_hit = False
@@ -204,6 +211,9 @@ class Fret(pygame.sprite.Sprite):
         self.pressed = False
         self.game = game
 
+        self.held_note = None
+        self.held_note_s_y = None
+
 
     def check_for_strum(self):
 
@@ -214,6 +224,7 @@ class Fret(pygame.sprite.Sprite):
                 if note.chord:
                     note.dead = True
                     self.game.song.previous_note_hit = True
+                    self.game.score += 50
                 else:
                     for fret in self.game.frets:
                         if fret.pressed and fret.num > self.num:
@@ -221,6 +232,10 @@ class Fret(pygame.sprite.Sprite):
                     else:
                         note.dead = True
                         self.game.song.previous_note_hit = True
+                        self.game.score += 50
+                if note.sustain != 0 and self.pressed:
+                    note.held = True
+                    self.held_note = note
 
     def check_for_hopo(self):
 
@@ -232,6 +247,7 @@ class Fret(pygame.sprite.Sprite):
                     if note.chord:
                         note.dead = True
                         self.game.song.previous_note_hit = True
+                        self.game.score += 50
                     else:
                         for fret in self.game.frets:
                             if fret.pressed and fret.num > self.num:
@@ -239,6 +255,23 @@ class Fret(pygame.sprite.Sprite):
                         else:
                             note.dead = True
                             self.game.song.previous_note_hit = True
+                            self.game.score += 50
+                    if note.sustain != 0 and self.pressed:
+                        note.held = True
+                        self.held_note = note
+                        #self.held_note_s_y = note.sustain_y
+
+        #if self.held_note != None:
+         #   self.held_note_s_y += 6
+
+        if self.held_note != None:
+            self.game.score += 2
+            if self.held_note.sustain_y  > 720:
+                self.held_note = None
+            if not self.pressed:
+                self.held_note = None
+            
+                
 
 class GameMain():
 
@@ -266,6 +299,13 @@ class GameMain():
 
         self.frets.add(self.fret0, self.fret1, self.fret2, self.fret3, self.fret4)
 
+        self.score = 0
+    
+        self.font = pygame.font.Font('freesansbold.ttf', 32)
+        self.score_text = self.font.render('0', True, Color('white'))
+        self.score_text_rect = self.score_text.get_rect()
+        self.score_text_rect.center = (940, 400)
+
         self.song.audio_stream.play()
         
 
@@ -279,7 +319,8 @@ class GameMain():
                 fret.check_for_hopo()
             self.draw()
             self.clock.tick(60)
-            print len(self.song.loaded_notes)
+            #print len(self.song.loaded_notes)
+            print self.clock.get_fps()
         pygame.quit()
 
     def draw(self):
@@ -287,15 +328,22 @@ class GameMain():
 
         for fret in self.frets:
             pygame.draw.circle(self.screen, fret.color, fret.rect.center, 25)
+            if fret.held_note != None:
+                pygame.draw.line(self.screen, fret.color, fret.rect.center, (fret.rect.center[0],fret.held_note.sustain_y), 3) 
             if fret.pressed:
                 pygame.draw.circle(self.screen, Color('black'), fret.rect.center, 15)
 
         for note in self.song.loaded_notes:
             pygame.draw.circle(self.screen, Color(note.color), note.rect.center, 20)
             if note.sustain:
-                pygame.draw.line(self.screen, Color(note.color), note.rect.center, (note.rect.center[0], note.sustain_y))
+                if not note.held:
+                    pygame.draw.line(self.screen, Color(note.color), note.rect.center, (note.rect.center[0], note.sustain_y))
             if note.hopo == True:
                 pygame.draw.circle(self.screen, Color('white'), note.rect.center, 10)
+
+
+        self.score_text = self.font.render('{}'.format(self.score), True, Color('white'))
+        self.screen.blit(self.score_text, self.score_text_rect)
                 
         
 
@@ -353,10 +401,14 @@ class Menu():
         self.screen = pygame.display.set_mode((self.width, self.height))
         self.clock = pygame.time.Clock()
 
-        self.thestage = pygbutton.PygButton((325, 175, 150, 50), 'The Stage')
-        self.cliffs = pygbutton.PygButton((325, 275, 150, 50), 'Cliffs of Dover')
-        self.hail = pygbutton.PygButton((325, 375, 150, 50), 'Hail to the King')
-        self.peace = pygbutton.PygButton((325, 475, 150, 50), 'Peace of Mind')
+        self.thestage = pygbutton.PygButton((325, 125, 150, 50), 'The Stage')
+        self.thestage.bgcolor = Color('green')
+        self.cliffs = pygbutton.PygButton((325, 225, 150, 50), 'Cliffs of Dover')
+        self.cliffs.bgcolor = Color('red')
+        self.hail = pygbutton.PygButton((325, 325, 150, 50), 'Hail to the King')
+        self.hail.bgcolor = Color('yellow')
+        self.peace = pygbutton.PygButton((325, 425, 150, 50), 'Peace of Mind')
+        self.peace.bgcolor = Color('blue')
 
     def main_loop(self):
         while not self.done:
@@ -386,6 +438,18 @@ class Menu():
             elif event.type == KEYDOWN:
                 if event.key == K_ESCAPE:
                     self.done = True
+                elif event.key == K_a:
+                    game = GameMain('thestage.chart')
+                    game.main_loop()
+                elif event.key == K_s:
+                    game = GameMain('cliffs.chart')
+                    game.main_loop()
+                elif event.key == K_d:
+                    game = GameMain('hail.chart')
+                    game.main_loop()
+                elif event.key == K_f:
+                    game = GameMain('peaceofmind.chart')
+                    game.main_loop()
 
             if 'click' in self.thestage.handleEvent(event):
                 game = GameMain('thestage.chart')
