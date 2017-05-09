@@ -5,28 +5,27 @@ from pygame.locals import *
 
 class Note(pygame.sprite.Sprite):
 
-    def __init__(self, tick, y, color, chord, song, sustain):
+    def __init__(self, tick, y, color, chord, game, sustain):
         pygame.sprite.Sprite.__init__(self)
 
         self.tick = tick
         self.color = color
-        self.song = song
+        self.game = game
         self.hopo = False
         if chord:
-            self.hopo = self.song.note_list[-1].hopo
+            self.hopo = self.game.song.note_list[-1].hopo
         else:
-            if len(self.song.note_list) == 0:
+            if len(self.game.song.note_list) == 0:
                 self.hopo = False
             else:
-                if self.tick - self.song.note_list[-1].tick <= self.song.hopo_distance:
-                    if self.song.note_list[-1].color != self.color:
+                if self.tick - self.game.song.note_list[-1].tick <= self.game.song.hopo_distance:
+                    if self.game.song.note_list[-1].color != self.color:
                         self.hopo = True
         self.sustain_y = sustain
         self.sustain = False
         if self.sustain_y != 0:
             self.sustain = True
         self.held = False
-        self.song = song
         self.speed = 6
         self.dead = False
         self.chord = chord
@@ -60,26 +59,33 @@ class Note(pygame.sprite.Sprite):
         if self.rect.center[1] > 830 and not self.dead:
             if self.sustain != 0:
                 if self.sustain_y > 830:
-                    self.song.loaded_notes.remove(self)
+                    self.game.song.loaded_notes.remove(self)
                     self.dead = True
                     self.kill()
+                    self.game.multiplier = 1
+                    self.game.partial_multiplier = 0
             else:
-                self.song.loaded_notes.remove(self)
+                self.game.song.loaded_notes.remove(self)
                 self.dead = True
                 self.kill()
-        elif self.rect.center[1] > 740 and not self.dead and self in self.song.loaded_notes:
+                self.game.multiplier = 1
+                self.game.partial_multiplier = 0
+        elif self.rect.center[1] > 740 and not self.dead and self in self.game.song.loaded_notes:
             if self.missed == False:
-                self.song.previous_note_hit = False
+                self.game.song.previous_note_hit = False
                 self.missed = True
+                self.game.multiplier = 1
+                self.game.partial_multiplier = 0
 
 
 class Song:
 
-    def __init__(self, filename):
+    def __init__(self, filename, game):
 
         self.chart = filename
         self.song_name = ''
         self.audio_stream = None
+        self.game = game
 
         self.resolution = 0
         self.hopo_distance = 0
@@ -146,19 +152,19 @@ class Song:
                     #print note_beat, note_y
                     if note_type == 0:
                         color = 'green'
-                        self.note_list.append(Note(tick, note_y, color, chord, self, sustain))
+                        self.note_list.append(Note(tick, note_y, color, chord, self.game, sustain))
                     elif note_type == 1:
                         color = 'red'
-                        self.note_list.append(Note(tick, note_y, color, chord, self, sustain))
+                        self.note_list.append(Note(tick, note_y, color, chord, self.game, sustain))
                     elif note_type == 2:
                         color = 'yellow'
-                        self.note_list.append(Note(tick, note_y, color, chord, self, sustain))
+                        self.note_list.append(Note(tick, note_y, color, chord, self.game, sustain))
                     elif note_type == 3:
                         color = 'blue'
-                        self.note_list.append(Note(tick, note_y, color, chord, self, sustain))
+                        self.note_list.append(Note(tick, note_y, color, chord, self.game, sustain))
                     elif note_type == 4:
                         color = 'orange'
-                        self.note_list.append(Note(tick, note_y, color, chord, self, sustain))
+                        self.note_list.append(Note(tick, note_y, color, chord, self.game, sustain))
                     elif note_type == 5:
                         if self.note_list[-1].hopo == True:
                             self.note_list[-1].hopo = False
@@ -224,7 +230,8 @@ class Fret(pygame.sprite.Sprite):
                 if note.chord:
                     note.dead = True
                     self.game.song.previous_note_hit = True
-                    self.game.score += 50
+                    self.game.score += 50 * self.game.multiplier
+                    self.game.partial_multiplier += 1
                 else:
                     for fret in self.game.frets:
                         if fret.pressed and fret.num > self.num:
@@ -232,12 +239,13 @@ class Fret(pygame.sprite.Sprite):
                     else:
                         note.dead = True
                         self.game.song.previous_note_hit = True
-                        self.game.score += 50
+                        self.game.score += 50 * self.game.multiplier
+                        self.game.partial_multiplier += 1
                 if note.sustain != 0 and self.pressed:
                     note.held = True
                     self.held_note = note
 
-    def check_for_hopo(self):
+    def update(self):
 
         note_hit_list = pygame.sprite.spritecollide(self, self.game.song.loaded_notes, False)
 
@@ -247,7 +255,8 @@ class Fret(pygame.sprite.Sprite):
                     if note.chord:
                         note.dead = True
                         self.game.song.previous_note_hit = True
-                        self.game.score += 50
+                        self.game.score += 50 * self.game.multiplier
+                        self.game.partial_multiplier += 1
                     else:
                         for fret in self.game.frets:
                             if fret.pressed and fret.num > self.num:
@@ -255,7 +264,8 @@ class Fret(pygame.sprite.Sprite):
                         else:
                             note.dead = True
                             self.game.song.previous_note_hit = True
-                            self.game.score += 50
+                            self.game.score += 50 * self.game.multiplier
+                            self.game.partial_multiplier += 1
                     if note.sustain != 0 and self.pressed:
                         note.held = True
                         self.held_note = note
@@ -265,11 +275,15 @@ class Fret(pygame.sprite.Sprite):
          #   self.held_note_s_y += 6
 
         if self.held_note != None:
-            self.game.score += 2
+            self.game.score += 2 * self.game.multiplier
             if self.held_note.sustain_y  > 720:
                 self.held_note = None
             if not self.pressed:
                 self.held_note = None
+        if self.game.partial_multiplier >= 9:
+            self.game.partial_multiplier = 0
+            if self.game.multiplier != 4:
+                self.game.multiplier += 1
             
                 
 
@@ -287,7 +301,7 @@ class GameMain():
         self.clock = pygame.time.Clock()
 
         self.chart = chart
-        self.song = Song(self.chart)
+        self.song = Song(self.chart, self)
         self.song.load_chart()
 
         self.frets = pygame.sprite.Group()
@@ -300,11 +314,21 @@ class GameMain():
         self.frets.add(self.fret0, self.fret1, self.fret2, self.fret3, self.fret4)
 
         self.score = 0
+        self.multiplier = 1
+        self.partial_multiplier = 0
     
         self.font = pygame.font.Font('freesansbold.ttf', 32)
         self.score_text = self.font.render('0', True, Color('white'))
         self.score_text_rect = self.score_text.get_rect()
         self.score_text_rect.center = (940, 400)
+
+        self.multiplier_text = self.font.render('x1', True, Color('white'))
+        self.multiplier_text_rect = self.score_text.get_rect()
+        self.multiplier_text_rect.center = (940, 500)
+
+        self.partial_text = self.font.render('', True, Color('white'))
+        self.partial_text_rect = self.partial_text.get_rect()
+        self.partial_text_rect.center = (940, 530)
 
         self.song.audio_stream.play()
         
@@ -316,7 +340,7 @@ class GameMain():
             for note in self.song.note_list:
                 note.update()
             for fret in self.frets:
-                fret.check_for_hopo()
+                fret.update()
             self.draw()
             self.clock.tick(60)
             #print len(self.song.loaded_notes)
@@ -344,6 +368,16 @@ class GameMain():
 
         self.score_text = self.font.render('{}'.format(self.score), True, Color('white'))
         self.screen.blit(self.score_text, self.score_text_rect)
+
+        self.multiplier_text = self.font.render('x{}'.format(self.multiplier), True, Color('white'))
+        self.screen.blit(self.multiplier_text, self.multiplier_text_rect)
+
+        if self.multiplier == 4:
+            self.partial_multiplier = 8
+        self.partial_text = self.font.render('I'*self.partial_multiplier, True, Color('white'))
+        self.screen.blit(self.partial_text, self.partial_text_rect)
+
+        pygame.draw.line(self.screen, Color('green'), (1015, 517), (1015, 539.5), 4)
                 
         
 
