@@ -68,8 +68,6 @@ class Note(pygame.sprite.Sprite):
                 self.game.song.loaded_notes.remove(self)
                 self.dead = True
                 self.kill()
-                self.game.multiplier = 1
-                self.game.partial_multiplier = 0
         elif self.rect.center[1] > 740 and not self.dead and self in self.game.song.loaded_notes:
             if self.missed == False:
                 self.game.song.previous_note_hit = False
