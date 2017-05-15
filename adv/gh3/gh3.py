@@ -514,7 +514,7 @@ class Menu():
                 if event.key == K_ESCAPE:
                     self.done = True
                 elif event.key == K_a:
-                    game = GameMain('endtest.chart')
+                    game = GameMain('thestage.chart')
                     game.main_loop()
                 elif event.key == K_s:
                     game = GameMain('cliffs.chart')
