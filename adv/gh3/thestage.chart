@@ -2,9 +2,9 @@ AudioStream = thestage.wav
 Resolution = 192
 Offset = -3
 BPM = 135
-Divisor = 5.2
+Divisor = 5.162
 
-#Divide by 5.2ish
+#Divide by 5.162 (at least at school?)
 
 768 = N 1 0
 768 = S 1 18432
