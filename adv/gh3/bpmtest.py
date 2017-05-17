@@ -1,4 +1,6 @@
 import pygame, random, math, pygbutton, time
+import Tkinter as tk
+import tkFileDialog
 
 from pygame.locals import *
 
@@ -125,8 +127,8 @@ class Song:
                     #print self.hopo_distance
                 elif 'Offset' in line:
                     self.offset = float(line[9:])
-                #elif 'BPM' in line:
-                 #   self.bpm = int(line[6:])
+                elif 'BPM' in line:
+                    self.bpm = int(line[6:])
                 elif 'Divisor' in line:
                     self.divisor = float(line[10:])
                     #print self.divisor
@@ -140,17 +142,23 @@ class Song:
                     tick = int(line[0])
                     note_type = int(line[3])
                     color = ''
-                    note_beat = (tick / float(self.resolution)) + self.offset
-                    pixels_per_beat = (self.bpm/60.0) * 360
-                    note_y = (720.0 - (note_beat * pixels_per_beat)) / self.divisor
+                    #note_beat = (tick / float(self.resolution)) + self.offset
+                    #pixels_per_beat = (self.bpm/60.0) * 360
+                    #note_y = (720.0 - (note_beat * pixels_per_beat)) / self.divisor
+                    note_bpm_list = [i for i in self.bpm_list if i[0] <= tick]
+                    total_y = 0
+                    for bpm in zip(note_bpm_list, note_bpm_list[1:]):
+                        tick1, tick2, bpm1, bpm2 = bpm[0][0], bpm[1][0], bpm[0][1], bpm[1][1]
+                        tick_difference = tick2 - tick1
+                        
                     chord = False
                     sustain = 0
-                    if int(line[-1]):
-                        sustain = int(line[-1]) + tick
-                        sustain_end_beat = (sustain / float(self.resolution)) + self.offset
-                        sustain = (720.0 - (sustain_end_beat * pixels_per_beat)) / self.divisor
-                        sustain = int(round(sustain))
-                        #print sustain
+##                    if int(line[-1]):
+##                        sustain = int(line[-1]) + tick
+##                        sustain_end_beat = (sustain / float(self.resolution)) + self.offset
+##                        sustain = (720.0 - (sustain_end_beat * pixels_per_beat)) / self.divisor
+##                        sustain = int(round(sustain))
+##                        #print sustain
                     if len(self.note_list) != 0:
                         if tick == self.note_list[-1].tick and note_type != 5:
                             chord = True
@@ -184,7 +192,6 @@ class Song:
         self.tps = self.bps * self.resolution
         self.tpf = self.tps /60.0
         #print self.tpf
-        print self.bpm_list
 
     def update(self):
 
@@ -483,14 +490,16 @@ class Menu():
         self.screen = pygame.display.set_mode((self.width, self.height))
         self.clock = pygame.time.Clock()
 
-        self.thestage = pygbutton.PygButton((325, 125, 150, 50), 'The Stage')
+        self.thestage = pygbutton.PygButton((325, 75, 150, 50), 'The Stage')
         self.thestage.bgcolor = Color('green')
-        self.cliffs = pygbutton.PygButton((325, 225, 150, 50), 'Cliffs of Dover')
+        self.cliffs = pygbutton.PygButton((325, 175, 150, 50), 'Cliffs of Dover')
         self.cliffs.bgcolor = Color('red')
-        self.hail = pygbutton.PygButton((325, 325, 150, 50), 'Hail to the King')
+        self.hail = pygbutton.PygButton((325, 275, 150, 50), 'Hail to the King')
         self.hail.bgcolor = Color('yellow')
-        self.peace = pygbutton.PygButton((325, 425, 150, 50), 'Peace of Mind')
+        self.peace = pygbutton.PygButton((325, 375, 150, 50), 'Peace of Mind')
         self.peace.bgcolor = Color('blue')
+        self.choose = pygbutton.PygButton((325, 475, 150, 50), 'Choose a File...')
+        self.choose.bgcolor = Color('orange')
 
     def main_loop(self):
         while not self.done:
@@ -506,6 +515,7 @@ class Menu():
         self.cliffs.draw(self.screen)
         self.hail.draw(self.screen)
         self.peace.draw(self.screen)
+        self.choose.draw(self.screen)
 
         pygame.display.flip() #put all the work on the screen
 
@@ -532,6 +542,13 @@ class Menu():
                 elif event.key == K_f:
                     game = GameMain('peaceofmind.chart')
                     game.main_loop()
+                elif event.key == K_g:
+                    root = tk.Tk()
+                    root.withdraw()
+                    file_path = tkFileDialog.askopenfilename()
+                    file_path = file_path.split('/')
+                    game = GameMain(file_path[-1])
+                    game.main_loop()
 
             if 'click' in self.thestage.handleEvent(event):
                 game = GameMain('thestage.chart')
@@ -544,6 +561,13 @@ class Menu():
                 game.main_loop()
             if 'click' in self.peace.handleEvent(event):
                 game = GameMain('peaceofmind.chart')
+                game.main_loop()
+            if 'click' in self.choose.handleEvent(event):
+                root = tk.Tk()
+                root.withdraw()
+                file_path = tkFileDialog.askopenfilename()
+                file_path = file_path.split('/')
+                game = GameMain(file_path[-1])
                 game.main_loop()
 
 
